@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Data Lokasi Kemacetan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    
+    <!-- Tailwind + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.18.1/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Database Local -->
+    <script src="database.js"></script>
+    
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0f0f1a);
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            color: #ffffff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Glass effect yang lebih mewah */
+        .glass {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.92), rgba(20, 20, 35, 0.88));
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+        }
+        
+        /* Header gradient premium */
+        .header-gradient {
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.95) 0%,
+                rgba(30, 41, 59, 0.92) 50%,
+                rgba(51, 65, 85, 0.9) 100%);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%,
+                rgba(59, 130, 246, 0.6) 50%,
+                transparent 100%);
+        }
+        
+        .header-gradient h1 {
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Card statistik dengan efek glow */
+        .stat-card {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            color: #ffffff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.05), 
+                transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Tabel dengan desain premium */
+        .table-container {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.95), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .table-glass {
+            background: transparent !important;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table-glass thead {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.9));
+            color: #ffffff;
+        }
+        
+        .table-glass thead th {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.25rem;
+        }
+        
+        .table-glass tbody tr {
+            background: transparent !important;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .table-glass tbody tr:hover {
+            background: linear-gradient(90deg, 
+                rgba(59, 130, 246, 0.08), 
+                rgba(30, 64, 175, 0.05)) !important;
+            transform: scale(1.002);
+        }
+        
+        .table-glass .table-zebra tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02) !important;
+        }
+        
+        .table-glass .table-zebra tbody tr:nth-child(even):hover {
+            background: linear-gradient(90deg, 
+                rgba(59, 130, 246, 0.1), 
+                rgba(30, 64, 175, 0.06)) !important;
+        }
+        
+        .table-glass tbody td {
+            color: #cbd5e1 !important;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9375rem;
+        }
+        
+        /* Badge dengan desain modern */
+        .badge-modern {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            letter-spacing: 0.02em;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white !important;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white !important;
+        }
+        
+        .badge-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white !important;
+        }
+        
+        /* Button dengan desain premium */
+        .btn-premium {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-premium:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 50%, #6366f1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* Button Tambah khusus - warna berbeda dari kolom */
+        .btn-tambah {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-tambah:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            color: white !important;
+        }
+        
+        /* Button Ubah dan Hapus yang lebih rapih */
+        .btn-ubah {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white !important;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .btn-ubah:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-hapus {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            color: white !important;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .btn-hapus:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Input dengan desain modern */
+        .input-glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.9375rem;
+        }
+        
+        .input-glass:focus {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            color: #ffffff;
+        }
+        
+        .input-glass::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+            height: 60px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .bottom-nav a {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 0 0.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .bottom-nav a:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .bottom-nav a.active {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+        
+        .bottom-nav .nav-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bottom-nav .nav-label {
+            font-size: 0.625rem;
+            font-weight: 500;
+        }
+        
+        /* Notification styling */
+        .notification {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            max-width: 320px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-scroll {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            .mobile-padding {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+            
+            .mobile-text-xs {
+                font-size: 0.75rem !important;
+            }
+            
+            .mobile-sticky {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 40 !important;
+            }
+            
+            .btn-ubah, .btn-hapus {
+                min-width: 60px;
+                padding: 0.35rem 0.6rem;
+                font-size: 0.7rem;
+            }
+            
+            /* Table responsive untuk mobile */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border-radius: 10px;
+            }
+            
+            .table-container table {
+                min-width: 768px;
+            }
+            
+            /* Button sizing untuk mobile */
+            .btn-mobile {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Grid layout untuk mobile */
+            .mobile-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Padding untuk mobile */
+            .mobile-section-padding {
+                padding: 1rem !important;
+            }
+            
+            /* Text size untuk mobile */
+            .mobile-h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            .mobile-h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Stat card untuk mobile */
+            .stat-card {
+                padding: 0.75rem !important;
+            }
+            
+            .stat-card p:first-child {
+                font-size: 0.75rem !important;
+            }
+            
+            .stat-card p:nth-child(2) {
+                font-size: 1.5rem !important;
+            }
+            
+            /* Mobile Card View */
+            .mobile-card {
+                background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 10px;
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            
+            .mobile-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 0.75rem;
+            }
+            
+            .mobile-card-title {
+                font-weight: 600;
+                font-size: 0.9rem;
+                color: #e2e8f0;
+                margin-bottom: 0.25rem;
+            }
+            
+            .mobile-card-subtitle {
+                font-size: 0.75rem;
+                color: #94a3b8;
+            }
+            
+            .mobile-card-body {
+                font-size: 0.8rem;
+                color: #cbd5e1;
+            }
+            
+            .mobile-card-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 1rem;
+                padding-top: 0.75rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Text colors untuk kontras */
+        .text-primary {
+            color: #e2e8f0 !important;
+        }
+        
+        .text-secondary {
+            color: #cbd5e1 !important;
+        }
+        
+        .text-muted {
+            color: #94a3b8 !important;
+        }
+        
+        /* Badge variants untuk kontras */
+        .bg-success-soft {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #10b981 !important;
+        }
+        
+        .bg-warning-soft {
+            background: rgba(245, 158, 11, 0.15) !important;
+            color: #f59e0b !important;
+        }
+        
+        .bg-error-soft {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+        }
+        
+        /* Border colors */
+        .border-light {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Loading screen */
+        #loadingScreen {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+        }
+        
+        /* Filter panel untuk mobile */
+        .filter-panel-mobile {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+        
+        /* Export button styling */
+        .btn-export {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-export:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+        
+        /* Mobile action buttons */
+        .mobile-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .mobile-action-buttons .btn {
+            flex: 1;
+            justify-content: center;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        /* Responsive grid untuk filter */
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+        }
+        
+        /* Empty state styling */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state-description {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen touch-manipulation">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-gradient-to-br from-blue-900 to-gray-900 flex flex-col items-center justify-center z-50 transition-opacity duration-300">
+        <div class="text-center">
+            <div class="text-6xl mb-4 text-white">📋</div>
+            <div class="loading loading-spinner loading-lg text-white mb-4"></div>
+            <h2 class="text-2xl font-bold text-white mb-2 animate-pulse">Data Lokasi Kemacetan</h2>
+            <p class="text-gray-300">Memuat data...</p>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6 mobile-padding">
+        
+        <!-- HEADER -->
+        <header class="rounded-2xl sm:rounded-3xl shadow-xl header-gradient mobile-sticky animate-fadeIn">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex-1">
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold leading-tight mobile-h1">
+                            📋 Data Lokasi Kemacetan Lengkap
+                        </h1>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1 opacity-90">
+                            Seluruh data lokasi kemacetan yang tersimpan dalam database
+                        </p>
+                    </div>
+                    
+                    <!-- Button group untuk desktop -->
+                    <div class="hidden sm:flex flex-wrap gap-2">
+                        <a href="index.html" class="btn btn-sm md:btn-md btn-premium shadow btn-mobile">
+                            <span class="hidden sm:inline">←</span>
+                            <span class="sm:hidden">🏠</span>
+                            <span class="ml-1 font-medium">Dashboard</span>
+                        </a>
+                        <a href="form_tambah.html" class="btn btn-sm md:btn-md btn-tambah shadow btn-mobile">
+                            <span class="hidden sm:inline">+</span>
+                            <span class="sm:hidden">➕</span>
+                            <span class="ml-1 font-medium">Tambah Data</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Button group untuk mobile -->
+                    <div class="sm:hidden mobile-action-buttons">
+                        <a href="index.html" class="btn btn-sm btn-premium">
+                            <span>🏠</span>
+                            <span class="ml-1">Dashboard</span>
+                        </a>
+                        <a href="form_tambah.html" class="btn btn-sm btn-tambah">
+                            <span>➕</span>
+                            <span class="ml-1">Tambah</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- STATISTIK -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mobile-grid">
+            <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center">
+                <p class="text-muted text-xs sm:text-sm font-medium">Total Data</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 sm:mt-2 text-primary" id="totalData">0</p>
+            </div>
+            
+            <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center" style="border-left: 4px solid #10b981;">
+                <p class="text-muted text-xs sm:text-sm font-medium">Status Lancar</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-green-400 mt-1 sm:mt-2" id="totalLancar">0</p>
+            </div>
+            
+            <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center" style="border-left: 4px solid #f59e0b;">
+                <p class="text-muted text-xs sm:text-sm font-medium">Status Padat</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-400 mt-1 sm:mt-2" id="totalPadat">0</p>
+            </div>
+            
+            <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center" style="border-left: 4px solid #ef4444;">
+                <p class="text-muted text-xs sm:text-sm font-medium">Status Macet</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-red-400 mt-1 sm:mt-2" id="totalMacet">0</p>
+            </div>
+        </div>
+        
+        <!-- FILTER SECTION -->
+        <section class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 animate-fadeIn mobile-section-padding">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg sm:text-xl font-bold mobile-h2">🔍 Filter & Pencarian</h2>
+                <button id="mobileFilterToggle" class="btn btn-xs btn-circle btn-ghost text-muted hover:text-primary sm:hidden">
+                    ⚙️
+                </button>
+            </div>
+            
+            <div id="filterSection" class="grid grid-cols-1 md:grid-cols-3 gap-4 filter-grid">
+                <div>
+                    <label class="block text-sm font-medium text-secondary mb-2">Cari Berdasarkan:</label>
+                    <input type="text" id="searchInput" 
+                           placeholder="Alamat, Kecamatan, atau Kota..." 
+                           class="input input-bordered w-full input-glass"
+                           enterkeyhint="search">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-secondary mb-2">Status Kemacetan:</label>
+                    <select id="statusFilter" class="select select-bordered w-full input-glass">
+                        <option value="">Semua Status</option>
+                        <option value="Lancar">Lancar</option>
+                        <option value="Padat">Padat</option>
+                        <option value="Macet">Macet</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-secondary mb-2">Urutkan Berdasarkan:</label>
+                    <select id="sortBy" class="select select-bordered w-full input-glass">
+                        <option value="no">No Data</option>
+                        <option value="kota">Kota</option>
+                        <option value="traffic_level">Status</option>
+                        <option value="created_at">Tanggal</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button id="btnFilter" class="btn btn-sm btn-premium flex-1 sm:flex-none">Terapkan Filter</button>
+                <button id="btnReset" class="btn btn-sm glass border-light flex-1 sm:flex-none">Reset</button>
+            </div>
+        </section>
+        
+        <!-- DATA TABLE SECTION -->
+        <section class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 animate-fadeIn mobile-section-padding">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg sm:text-xl font-bold mobile-h2">📊 Data Lokasi</h2>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-muted hidden sm:block">Tampilan:</span>
+                    <div class="tabs tabs-boxed tabs-sm bg-transparent border border-light">
+                        <button id="viewTable" class="tab tab-active text-xs">Tabel</button>
+                        <button id="viewCards" class="tab text-xs">Kartu</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Desktop Table View -->
+            <div id="desktopTableView" class="hidden sm:block">
+                <div class="table-container">
+                    <table class="table table-zebra w-full table-glass">
+                        <thead>
+                            <tr>
+                                <th class="py-3 px-4 text-sm">No</th>
+                                <th class="py-3 px-4 text-sm">Alamat</th>
+                                <th class="py-3 px-4 text-sm">Koordinat</th>
+                                <th class="py-3 px-4 text-sm">Wilayah</th>
+                                <th class="py-3 px-4 text-sm">Status</th>
+                                <th class="py-3 px-4 text-sm">Tanggal Dibuat</th>
+                                <th class="py-3 px-4 text-sm text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Data akan diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div id="mobileCardView" class="sm:hidden">
+                <!-- Data akan diisi oleh JavaScript -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state hidden">
+                <div class="empty-state-icon">📭</div>
+                <h3 class="empty-state-title">Tidak Ada Data</h3>
+                <p class="empty-state-description">Belum ada data lokasi kemacetan yang tersimpan.</p>
+                <a href="form_tambah.html" class="btn btn-tambah btn-sm">+ Tambah Data Pertama</a>
+            </div>
+        </section>
+        
+        <!-- EXPORT & ACTIONS SECTION -->
+        <section class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 animate-fadeIn mobile-section-padding">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-lg font-bold mobile-h2 mb-2">📤 Ekspor & Tindakan</h3>
+                    <p class="text-sm text-muted">Total data tersimpan: <span id="totalDataCount" class="font-semibold text-primary">0</span> lokasi</p>
+                </div>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button onclick="exportToJSON()" class="btn btn-sm btn-export flex-1 sm:flex-none">
+                        <span>📥</span>
+                        <span class="ml-1">Export JSON</span>
+                    </button>
+                    <button onclick="showClearDatabaseModal()" class="btn btn-sm btn-hapus flex-1 sm:flex-none">
+                        <span>🗑️</span>
+                        <span class="ml-1">Hapus Semua</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Database Info -->
+            <div class="mt-4 pt-4 border-t border-light">
+                <p class="text-xs text-muted text-center">Data disimpan di browser menggunakan LocalStorage</p>
+            </div>
+        </section>
+        
+        <!-- FOOTER -->
+        <footer class="text-center text-muted text-xs sm:text-sm py-6">
+            <p class="font-medium text-secondary">Data Lokasi Kemacetan - Sistem Monitoring Lalu Lintas</p>
+            <p class="mt-1 text-muted">Rizky Valent - IF2 10123069</p>
+        </footer>
+    </div>
+    
+    <!-- Modal untuk Hapus Semua Data -->
+    <div id="clearDatabaseModal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box glass max-w-md">
+            <h3 class="font-bold text-lg text-primary">⚠️ Konfirmasi Hapus Data</h3>
+            <p class="py-4 text-secondary">
+                PERINGATAN: Ini akan menghapus SEMUA data dari database. 
+                Data yang dihapus tidak dapat dikembalikan.
+            </p>
+            <div class="modal-action">
+                <button onclick="closeClearDatabaseModal()" class="btn btn-ubah">Batal</button>
+                <button onclick="confirmClearDatabase()" class="btn btn-hapus">Hapus Semua Data</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation untuk Mobile -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-40 sm:hidden">
+        <div class="flex justify-around items-center h-full">
+            <a href="index.html">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="data_lokasi.html" class="active">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Data</span>
+            </a>
+            <a href="form_tambah.html">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Tambah</span>
+            </a>
+            <a href="posisi_saya.html">
+                <span class="nav-icon">📍</span>
+                <span class="nav-label">Posisi</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-sm"></div>
+
+    <script>
+        // Initialize database
+        Database.initDatabase();
+        
+        // Variables
+        let currentView = 'table'; // 'table' or 'cards'
+        let searchTimeout;
+        
+        // Initialize on DOM loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                }, 300);
+            }, 500);
+            
+            // Load initial data
+            loadData();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Check URL parameters for status filter
+            checkUrlParameters();
+        });
+        
+        // Fungsi untuk memuat dan menampilkan data
+        function loadData() {
+            let lokasiList = Database.getAllLokasi();
+            
+            // Update statistics
+            updateStatistics(lokasiList);
+            
+            // Apply filters
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            
+            if (searchTerm) {
+                lokasiList = lokasiList.filter(lokasi => 
+                    lokasi.alamat.toLowerCase().includes(searchTerm) ||
+                    lokasi.kecamatan.toLowerCase().includes(searchTerm) ||
+                    lokasi.kota.toLowerCase().includes(searchTerm) ||
+                    lokasi.provinsi.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (statusFilter) {
+                lokasiList = lokasiList.filter(lokasi => lokasi.traffic_level === statusFilter);
+            }
+            
+            // Apply sorting
+            lokasiList = Database.sortLokasi(lokasiList, sortBy, 'ASC');
+            
+            // Update total data count
+            document.getElementById('totalDataCount').textContent = lokasiList.length;
+            
+            // Render data based on current view
+            if (currentView === 'table') {
+                renderTableView(lokasiList);
+            } else {
+                renderCardView(lokasiList);
+            }
+        }
+        
+        // Update statistics
+        function updateStatistics(lokasiList) {
+            const total = lokasiList.length;
+            const lancar = lokasiList.filter(l => l.traffic_level === 'Lancar').length;
+            const padat = lokasiList.filter(l => l.traffic_level === 'Padat').length;
+            const macet = lokasiList.filter(l => l.traffic_level === 'Macet').length;
+            
+            document.getElementById('totalData').textContent = total;
+            document.getElementById('totalLancar').textContent = lancar;
+            document.getElementById('totalPadat').textContent = padat;
+            document.getElementById('totalMacet').textContent = macet;
+        }
+        
+        // Render table view
+        function renderTableView(lokasiList) {
+            const tableBody = document.getElementById('dataTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (lokasiList.length === 0) {
+                tableBody.innerHTML = '';
+                document.getElementById('desktopTableView').classList.remove('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = '';
+            
+            lokasiList.forEach(lokasi => {
+                // Format tanggal
+                const tanggal = new Date(lokasi.created_at).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Badge status
+                let badgeClass = 'badge-modern ';
+                let badgeText = lokasi.traffic_level;
+                
+                switch(lokasi.traffic_level) {
+                    case 'Lancar':
+                        badgeClass += 'badge-success';
+                        break;
+                    case 'Padat':
+                        badgeClass += 'badge-warning';
+                        break;
+                    case 'Macet':
+                        badgeClass += 'badge-error';
+                        break;
+                    default:
+                        badgeClass += 'bg-gray-600';
+                }
+                
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="font-semibold py-3 px-4">${lokasi.no}</td>
+                        <td class='py-3 px-4 max-w-xs truncate' title="${lokasi.alamat}">${lokasi.alamat}</td>
+                        <td class='py-3 px-4 text-xs'>
+                            <span class="font-mono text-secondary">${lokasi.latitude.toFixed(6)}</span><br>
+                            <span class="font-mono text-secondary">${lokasi.longitude.toFixed(6)}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium">${lokasi.kecamatan || '-'}</div>
+                            <div class="text-sm text-muted">${lokasi.kota || '-'}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="${badgeClass}">${badgeText}</span>
+                        </td>
+                        <td class="py-3 px-4 text-sm text-secondary">${tanggal}</td>
+                        <td class="py-3 px-4 text-center space-x-1">
+                            <a href='form_ubah.html?no=${lokasi.no}' class='btn-ubah'>Ubah</a>
+                            <button onclick="deleteData(${lokasi.no})" class='btn-hapus'>Hapus</button>
+                        </td>
+                    </tr>
+                `;
+                
+                tableBody.innerHTML += row;
+            });
+            
+            document.getElementById('desktopTableView').classList.remove('hidden');
+        }
+        
+        // Render card view for mobile
+        function renderCardView(lokasiList) {
+            const cardView = document.getElementById('mobileCardView');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (lokasiList.length === 0) {
+                cardView.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            cardView.innerHTML = '';
+            
+            lokasiList.forEach(lokasi => {
+                // Format tanggal singkat untuk mobile
+                const tanggal = new Date(lokasi.created_at).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Badge status
+                let badgeClass = 'badge badge-sm ';
+                let badgeText = lokasi.traffic_level;
+                
+                switch(lokasi.traffic_level) {
+                    case 'Lancar':
+                        badgeClass += 'badge-success';
+                        break;
+                    case 'Padat':
+                        badgeClass += 'badge-warning';
+                        break;
+                    case 'Macet':
+                        badgeClass += 'badge-error';
+                        break;
+                    default:
+                        badgeClass += 'badge-neutral';
+                }
+                
+                const card = `
+                    <div class="mobile-card animate-fadeIn">
+                        <div class="mobile-card-header">
+                            <div>
+                                <div class="mobile-card-title">#${lokasi.no} • ${lokasi.alamat.substring(0, 60)}${lokasi.alamat.length > 60 ? '...' : ''}</div>
+                                <div class="mobile-card-subtitle">${lokasi.kecamatan}, ${lokasi.kota}</div>
+                            </div>
+                            <span class="${badgeClass}">${badgeText}</span>
+                        </div>
+                        
+                        <div class="mobile-card-body">
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <div class="text-xs text-muted">Koordinat:</div>
+                                    <div class="text-xs font-mono">${lokasi.latitude.toFixed(6)}</div>
+                                    <div class="text-xs font-mono">${lokasi.longitude.toFixed(6)}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-muted">Dibuat:</div>
+                                    <div class="text-xs">${tanggal}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mobile-card-footer">
+                            <a href='form_ubah.html?no=${lokasi.no}' class='btn-ubah text-xs py-1.5 px-3'>✏️ Ubah</a>
+                            <button onclick="deleteData(${lokasi.no})" class='btn-hapus text-xs py-1.5 px-3'>🗑️ Hapus</button>
+                        </div>
+                    </div>
+                `;
+                
+                cardView.innerHTML += card;
+            });
+        }
+        
+        // Fungsi hapus data
+        function deleteData(no) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 max-w-sm w-full">
+                    <h3 class="text-lg font-bold text-primary mb-3">Konfirmasi Hapus</h3>
+                    <p class="text-secondary text-sm mb-6">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</p>
+                    <div class="flex gap-3">
+                        <button onclick="this.closest('.fixed').remove()" class="btn-ubah flex-1">
+                            Batal
+                        </button>
+                        <button onclick="confirmDelete(${no})" class="btn-hapus flex-1">
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        // Confirm delete function
+        function confirmDelete(no) {
+            const success = Database.deleteLokasi(no);
+            if (success) {
+                showNotification('Data berhasil dihapus!', 'success');
+                loadData();
+            } else {
+                showNotification('Gagal menghapus data!', 'error');
+            }
+            
+            const modal = document.querySelector('.fixed.bg-black.bg-opacity-50');
+            if (modal) modal.remove();
+        }
+        
+        // Fungsi export data ke JSON
+        function exportToJSON() {
+            const data = Database.getAllLokasi();
+            if (data.length === 0) {
+                showNotification('Tidak ada data untuk diexport!', 'warning');
+                return;
+            }
+            
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `data_kemacetan_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data berhasil diexport!', 'success');
+        }
+        
+        // Modal untuk hapus semua data
+        function showClearDatabaseModal() {
+            const modal = document.getElementById('clearDatabaseModal');
+            modal.classList.add('modal-open');
+        }
+        
+        function closeClearDatabaseModal() {
+            const modal = document.getElementById('clearDatabaseModal');
+            modal.classList.remove('modal-open');
+        }
+        
+        // Fungsi hapus semua data
+        function confirmClearDatabase() {
+            localStorage.removeItem('kemacetan_db');
+            Database.initDatabase(); // Reset dengan data awal
+            
+            showNotification('Semua data telah dihapus! Database direset ke data awal.', 'success');
+            loadData();
+            
+            closeClearDatabaseModal();
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            let bgClass = 'glass';
+            let icon = 'ℹ️';
+            let title = 'Informasi';
+            
+            if (type === 'success') {
+                bgClass = 'bg-success-soft border-green-500/20';
+                icon = '✅';
+                title = 'Sukses';
+            } else if (type === 'error') {
+                bgClass = 'bg-error-soft border-red-500/20';
+                icon = '❌';
+                title = 'Error';
+            } else if (type === 'warning') {
+                bgClass = 'bg-warning-soft border-yellow-500/20';
+                icon = '⚠️';
+                title = 'Peringatan';
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${bgClass} border animate-slideIn`;
+            notification.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-lg mt-0.5">${icon}</span>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-primary mb-1">${title}</div>
+                        <div class="text-secondary text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // View toggle
+            document.getElementById('viewTable').addEventListener('click', () => {
+                currentView = 'table';
+                document.getElementById('viewTable').classList.add('tab-active');
+                document.getElementById('viewCards').classList.remove('tab-active');
+                loadData();
+            });
+            
+            document.getElementById('viewCards').addEventListener('click', () => {
+                currentView = 'cards';
+                document.getElementById('viewCards').classList.add('tab-active');
+                document.getElementById('viewTable').classList.remove('tab-active');
+                loadData();
+            });
+            
+            // Filter buttons
+            document.getElementById('btnFilter').addEventListener('click', loadData);
+            document.getElementById('btnReset').addEventListener('click', function() {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('statusFilter').value = '';
+                document.getElementById('sortBy').value = 'no';
+                loadData();
+                showNotification('Filter telah direset', 'info');
+            });
+            
+            // Mobile filter toggle
+            document.getElementById('mobileFilterToggle').addEventListener('click', function() {
+                const filterSection = document.getElementById('filterSection');
+                if (filterSection.classList.contains('hidden')) {
+                    filterSection.classList.remove('hidden');
+                    filterSection.classList.add('filter-panel-mobile');
+                    this.innerHTML = '✕';
+                } else {
+                    filterSection.classList.add('hidden');
+                    filterSection.classList.remove('filter-panel-mobile');
+                    this.innerHTML = '⚙️';
+                }
+            });
+            
+            // Cari saat mengetik (debounce)
+            document.getElementById('searchInput').addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadData, 300);
+            });
+            
+            // Change events for selects
+            document.getElementById('statusFilter').addEventListener('change', loadData);
+            document.getElementById('sortBy').addEventListener('change', loadData);
+        }
+        
+        // Check URL parameters for status filter
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status');
+            
+            if (status && ['Lancar', 'Padat', 'Macet'].includes(status)) {
+                document.getElementById('statusFilter').value = status;
+                loadData();
+                showNotification(`Memfilter data dengan status: ${status}`, 'info');
+            }
+        }
+        
+        // Export functions for global use
+        window.deleteData = deleteData;
+        window.exportToJSON = exportToJSON;
+        window.showClearDatabaseModal = showClearDatabaseModal;
+        window.confirmClearDatabase = confirmClearDatabase;
+        window.closeClearDatabaseModal = closeClearDatabaseModal;
+        window.confirmDelete = confirmDelete;
+    </script>
+</body>
+</html>

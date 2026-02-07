@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Proses Tambah Data</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💾</text></svg>">
+    
+    <!-- Tailwind + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.18.1/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Database Local -->
+    <script src="database.js"></script>
+    
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0f0f1a);
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            color: #ffffff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Glass effect premium */
+        .glass {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.92), rgba(20, 20, 35, 0.88));
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+        }
+        
+        /* Header gradient premium */
+        .header-gradient {
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.95) 0%,
+                rgba(30, 41, 59, 0.92) 50%,
+                rgba(51, 65, 85, 0.9) 100%);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%,
+                rgba(59, 130, 246, 0.6) 50%,
+                transparent 100%);
+        }
+        
+        /* Success state */
+        .success-state {
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .error-state {
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Button dengan desain premium */
+        .btn-premium {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-premium:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 50%, #6366f1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* Button Tambah khusus */
+        .btn-tambah {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-tambah:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            color: white !important;
+        }
+        
+        /* Data card styling */
+        .data-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(51, 65, 85, 0.7));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .data-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Status badge dengan desain premium */
+        .badge-status-lancar {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.15));
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .badge-status-padat {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(250, 204, 21, 0.15));
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .badge-status-macet {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.15));
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        /* Loading animation */
+        .loading-spinner {
+            color: #3b82f6;
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+            height: 60px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .bottom-nav a {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 0 0.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .bottom-nav a:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .bottom-nav a.active {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+        
+        .bottom-nav .nav-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bottom-nav .nav-label {
+            font-size: 0.625rem;
+            font-weight: 500;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-scroll {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            .mobile-padding {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+            
+            .mobile-text-xs {
+                font-size: 0.75rem !important;
+            }
+            
+            .mobile-sticky {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 40 !important;
+            }
+            
+            /* Grid layout untuk mobile */
+            .mobile-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Padding untuk mobile */
+            .mobile-section-padding {
+                padding: 1rem !important;
+            }
+            
+            /* Text size untuk mobile */
+            .mobile-h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            .mobile-h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Button sizing untuk mobile */
+            .btn-mobile {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Text colors untuk kontras */
+        .text-primary {
+            color: #e2e8f0 !important;
+        }
+        
+        .text-secondary {
+            color: #cbd5e1 !important;
+        }
+        
+        .text-muted {
+            color: #94a3b8 !important;
+        }
+        
+        /* Data item styling */
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .data-item:last-child {
+            border-bottom: none;
+        }
+        
+        .data-label {
+            color: #94a3b8;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .data-value {
+            color: #e2e8f0;
+            font-weight: 500;
+            text-align: right;
+            max-width: 60%;
+            word-break: break-word;
+        }
+        
+        /* Button groups untuk mobile */
+        .mobile-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Responsive text untuk mobile */
+        @media (max-width: 480px) {
+            .mobile-btn-group .btn span:not(.icon) {
+                display: none;
+            }
+            
+            .mobile-btn-group .btn {
+                min-width: 44px;
+                max-width: 44px;
+            }
+        }
+        
+        /* Map preview styling */
+        .map-preview {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.8));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+        
+        .coordinate-display {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800 touch-manipulation">
+    <!-- Loading State -->
+    <div id="loadingState" class="fixed inset-0 glass flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="loading loading-spinner loading-lg loading-spinner mb-4"></div>
+            <h3 class="text-lg font-bold mb-2 text-primary">Memproses Data</h3>
+            <p class="text-secondary text-sm">Menyimpan data ke database...</p>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-4 space-y-6 mobile-padding">
+        
+        <!-- HEADER -->
+        <header class="rounded-2xl shadow-xl header-gradient mobile-sticky animate-fadeIn">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <a href="index.html" class="btn btn-circle btn-ghost btn-sm text-white hover:bg-white/10">
+                            ←
+                        </a>
+                        <div>
+                            <h1 class="text-lg font-bold text-white mobile-h1 flex items-center gap-2">
+                                <span>💾</span>
+                                <span>Proses Tambah Data</span>
+                            </h1>
+                            <p class="text-blue-200 text-xs">Menyimpan data lokasi kemacetan</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- MAIN CONTENT -->
+        <div class="glass rounded-2xl p-4 animate-fadeIn mobile-section-padding">
+            <!-- Data Preview -->
+            <div id="dataPreview" class="space-y-6">
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-2">📋</div>
+                    <h2 class="text-xl font-bold mb-2 text-primary">Preview Data</h2>
+                    <p class="text-muted text-sm">Tinjau data sebelum disimpan</p>
+                </div>
+                
+                <!-- Data Card -->
+                <div class="data-card p-4 space-y-3">
+                    <!-- Alamat -->
+                    <div class="data-item">
+                        <span class="data-label">📍 Alamat</span>
+                        <span id="previewAlamat" class="data-value">-</span>
+                    </div>
+                    
+                    <!-- Grid for smaller fields -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Kecamatan -->
+                        <div class="data-item">
+                            <span class="data-label">🏘️ Kecamatan</span>
+                            <span id="previewKecamatan" class="data-value">-</span>
+                        </div>
+                        
+                        <!-- Kota -->
+                        <div class="data-item">
+                            <span class="data-label">🏙️ Kota</span>
+                            <span id="previewKota" class="data-value">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Coordinates -->
+                    <div class="map-preview">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-primary font-semibold">🗺️ Koordinat</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="coordinate-display text-center">
+                                <div class="text-xs text-muted mb-1">Latitude</div>
+                                <div id="previewLatitude" class="font-bold">-</div>
+                            </div>
+                            <div class="coordinate-display text-center">
+                                <div class="text-xs text-muted mb-1">Longitude</div>
+                                <div id="previewLongitude" class="font-bold">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid for additional fields -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Provinsi -->
+                        <div class="data-item">
+                            <span class="data-label">🏛️ Provinsi</span>
+                            <span id="previewProvinsi" class="data-value">-</span>
+                        </div>
+                        
+                        <!-- Kode Pos -->
+                        <div class="data-item">
+                            <span class="data-label">📮 Kode Pos</span>
+                            <span id="previewKodePos" class="data-value">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="data-item">
+                        <span class="data-label">🚦 Status</span>
+                        <span id="previewStatus" class="data-value">
+                            <span class="badge-status-lancar px-3 py-1 text-sm">-</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="pt-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="button" onclick="goBackToForm()" 
+                                class="btn glass border-light hover:bg-white/10 btn-sm flex-1 btn-mobile">
+                            <span class="hidden sm:inline">✏️ Ubah Data</span>
+                            <span class="sm:hidden">✏️ Ubah</span>
+                        </button>
+                        <button type="button" onclick="saveData()" 
+                                class="btn btn-tambah btn-sm flex-1 btn-mobile">
+                            <span class="hidden sm:inline">💾 Simpan Data</span>
+                            <span class="sm:hidden">💾 Simpan</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success State -->
+            <div id="successState" class="hidden space-y-6">
+                <div class="success-state rounded-2xl p-6 text-center">
+                    <div class="text-green-500 text-6xl mb-4 animate-pulse">✓</div>
+                    <h2 class="text-2xl font-bold mb-3 text-primary">Data Berhasil Disimpan!</h2>
+                    <p class="text-secondary mb-6">Data lokasi kemacetan telah berhasil disimpan ke database.</p>
+                    
+                    <div class="space-y-3">
+                        <div class="text-sm text-muted">
+                            <p>📍 <span id="savedAlamat" class="font-semibold text-primary">-</span></p>
+                            <p class="mt-1">📅 Disimpan: <span id="savedTime" class="font-semibold text-primary">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mobile-btn-group">
+                    <a href="index.html" class="btn btn-premium flex-1 btn-mobile">
+                        <span class="hidden sm:inline">🏠 Dashboard</span>
+                        <span class="sm:hidden">🏠</span>
+                    </a>
+                    <a href="data_lokasi.html" class="btn glass border-light hover:bg-white/10 flex-1 btn-mobile">
+                        <span class="hidden sm:inline">📋 Lihat Data</span>
+                        <span class="sm:hidden">📋</span>
+                    </a>
+                    <a href="form_tambah.html" class="btn btn-tambah flex-1 btn-mobile">
+                        <span class="hidden sm:inline">➕ Tambah Lagi</span>
+                        <span class="sm:hidden">➕</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Error State -->
+            <div id="errorState" class="hidden space-y-6">
+                <div class="error-state rounded-2xl p-6 text-center">
+                    <div class="text-red-500 text-6xl mb-4">❌</div>
+                    <h2 class="text-2xl font-bold mb-3 text-primary">Gagal Menyimpan Data</h2>
+                    <p class="text-secondary mb-4" id="errorMessage">Terjadi kesalahan saat menyimpan data.</p>
+                    
+                    <div class="space-y-3">
+                        <button onclick="retrySave()" class="btn btn-premium w-full btn-sm">
+                            🔄 Coba Lagi
+                        </button>
+                        <button onclick="goBackToForm()" class="btn glass border-light hover:bg-white/10 w-full btn-sm">
+                            ✏️ Kembali ke Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden text-center py-8">
+                <div class="text-muted text-5xl mb-4">📭</div>
+                <h3 class="text-lg font-semibold text-primary mb-2">Tidak Ada Data</h3>
+                <p class="text-muted text-sm mb-6">Tidak ada data yang diterima untuk diproses.</p>
+                <div class="mobile-btn-group">
+                    <a href="form_tambah.html" class="btn btn-tambah">➕ Tambah Data</a>
+                    <a href="index.html" class="btn glass border-light hover:bg-white/10">🏠 Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation for Mobile -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-40 sm:hidden animate-fadeIn">
+        <div class="flex justify-around items-center h-full">
+            <a href="index.html" class="active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="form_tambah.html">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Tambah</span>
+            </a>
+            <button onclick="saveData()" class="flex flex-col items-center justify-center p-2">
+                <span class="nav-icon">💾</span>
+                <span class="nav-label">Simpan</span>
+            </button>
+            <a href="data_lokasi.html">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Data</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-xs"></div>
+
+    <script>
+        // Initialize database
+        Database.initDatabase();
+        
+        // Variables
+        let formData = null;
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Parse URL parameters
+            parseUrlParameters();
+            
+            // Mobile optimizations
+            if (window.innerWidth <= 768) {
+                optimizeForMobile();
+            }
+        });
+        
+        // Parse URL parameters
+        function parseUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.toString() === '') {
+                showEmptyState();
+                return;
+            }
+            
+            // Extract data from URL parameters
+            formData = {
+                alamat: urlParams.get('alamat') || '',
+                latitude: parseFloat(urlParams.get('latitude')) || 0,
+                longitude: parseFloat(urlParams.get('longitude')) || 0,
+                kecamatan: urlParams.get('kecamatan') || '',
+                kota: urlParams.get('kota') || '',
+                provinsi: urlParams.get('provinsi') || '',
+                kode_pos: urlParams.get('kode_pos') || '',
+                traffic_level: urlParams.get('traffic_level') || 'Lancar'
+            };
+            
+            // Validate required fields
+            if (!formData.alamat || !formData.latitude || !formData.longitude || !formData.traffic_level) {
+                showErrorState('Data tidak lengkap. Silakan lengkapi semua field yang diperlukan.');
+                return;
+            }
+            
+            // Display data preview
+            displayDataPreview();
+            
+            // Hide loading state
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+        
+        // Display data preview
+        function displayDataPreview() {
+            if (!formData) return;
+            
+            // Set preview values
+            document.getElementById('previewAlamat').textContent = formData.alamat || '-';
+            document.getElementById('previewKecamatan').textContent = formData.kecamatan || '-';
+            document.getElementById('previewKota').textContent = formData.kota || '-';
+            document.getElementById('previewProvinsi').textContent = formData.provinsi || '-';
+            document.getElementById('previewKodePos').textContent = formData.kode_pos || '-';
+            document.getElementById('previewLatitude').textContent = formData.latitude.toFixed(6);
+            document.getElementById('previewLongitude').textContent = formData.longitude.toFixed(6);
+            
+            // Set status badge
+            const statusBadge = document.getElementById('previewStatus').querySelector('span');
+            statusBadge.textContent = formData.traffic_level;
+            statusBadge.className = 'px-3 py-1 text-sm';
+            
+            if (formData.traffic_level === 'Lancar') {
+                statusBadge.classList.add('badge-status-lancar');
+            } else if (formData.traffic_level === 'Padat') {
+                statusBadge.classList.add('badge-status-padat');
+            } else if (formData.traffic_level === 'Macet') {
+                statusBadge.classList.add('badge-status-macet');
+            }
+        }
+        
+        // Save data to database
+        function saveData() {
+            if (!formData) {
+                showErrorState('Tidak ada data untuk disimpan.');
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('dataPreview').classList.add('hidden');
+            
+            // Simulate saving delay
+            setTimeout(() => {
+                try {
+                    // Save to database
+                    const newLokasi = Database.addLokasi(formData);
+                    
+                    // Update saved data display
+                    document.getElementById('savedAlamat').textContent = newLokasi.alamat;
+                    document.getElementById('savedTime').textContent = new Date(newLokasi.created_at).toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    // Show success state
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('dataPreview').classList.add('hidden');
+                    document.getElementById('successState').classList.remove('hidden');
+                    
+                    // Show notification
+                    showNotification('Data berhasil disimpan!', 'success');
+                    
+                    // Clear URL parameters
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                } catch (error) {
+                    // Show error state
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('dataPreview').classList.remove('hidden');
+                    showErrorState(error.message || 'Gagal menyimpan data ke database.');
+                }
+            }, 1500);
+        }
+        
+        // Go back to form
+        function goBackToForm() {
+            if (formData) {
+                // Reconstruct form data and redirect
+                const urlParams = new URLSearchParams(formData);
+                window.location.href = `form_tambah.html?${urlParams.toString()}`;
+            } else {
+                window.location.href = 'form_tambah.html';
+            }
+        }
+        
+        // Retry save
+        function retrySave() {
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('dataPreview').classList.remove('hidden');
+        }
+        
+        // Show empty state
+        function showEmptyState() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('dataPreview').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+        }
+        
+        // Show error state
+        function showErrorState(message) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('dataPreview').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+            
+            showNotification(message, 'error');
+        }
+        
+        // Mobile optimizations
+        function optimizeForMobile() {
+            // Prevent zoom on double tap
+            document.addEventListener('touchstart', function(event) {
+                if (event.touches.length > 1) {
+                    event.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Better touch for buttons
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('touchstart', function() {
+                    this.classList.add('active');
+                });
+                btn.addEventListener('touchend', function() {
+                    this.classList.remove('active');
+                });
+            });
+            
+            // Add slide in animation for notifications
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                .animate-slideIn {
+                    animation: slideIn 0.3s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            let bgClass = 'glass';
+            let icon = 'ℹ️';
+            let title = 'Informasi';
+            
+            if (type === 'success') {
+                bgClass = 'bg-success-soft border-green-500/20';
+                icon = '✅';
+                title = 'Sukses';
+            } else if (type === 'error') {
+                bgClass = 'bg-error-soft border-red-500/20';
+                icon = '❌';
+                title = 'Error';
+            } else if (type === 'warning') {
+                bgClass = 'bg-warning-soft border-yellow-500/20';
+                icon = '⚠️';
+                title = 'Peringatan';
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${bgClass} border animate-slideIn`;
+            notification.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-lg mt-0.5">${icon}</span>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-primary mb-1">${title}</div>
+                        <div class="text-secondary text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+        
+        // Handle resize
+        function handleResize() {
+            if (window.innerWidth <= 768) {
+                document.querySelector('nav').classList.remove('hidden');
+            } else {
+                document.querySelector('nav').classList.add('hidden');
+            }
+        }
+        
+        // Window resize listener
+        window.addEventListener('resize', handleResize);
+        
+        // Export functions for global use
+        window.saveData = saveData;
+        window.goBackToForm = goBackToForm;
+        window.retrySave = retrySave;
+    </script>
+</body>
+</html>

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Ubah Lokasi Kemacetan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+    
+    <!-- Mapbox -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    
+    <!-- Geocoder -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+    
+    <!-- Tailwind + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.18.1/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Database Local -->
+    <script src="database.js"></script>
+    
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0f0f1a);
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            color: #ffffff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Glass effect premium */
+        .glass {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.92), rgba(20, 20, 35, 0.88));
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+        }
+        
+        /* Header gradient premium */
+        .header-gradient {
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.95) 0%,
+                rgba(30, 41, 59, 0.92) 50%,
+                rgba(51, 65, 85, 0.9) 100%);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%,
+                rgba(59, 130, 246, 0.6) 50%,
+                transparent 100%);
+        }
+        
+        /* Button dengan desain premium */
+        .btn-premium {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-premium:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 50%, #6366f1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* Button Ubah khusus */
+        .btn-ubah {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-ubah:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+            color: white !important;
+        }
+        
+        /* Button Simpan */
+        .btn-simpan {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-simpan:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            color: white !important;
+        }
+        
+        /* Input dengan desain modern */
+        .input-glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.9375rem;
+        }
+        
+        .input-glass:focus {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            color: #ffffff;
+        }
+        
+        .input-glass::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Select dengan desain modern */
+        .select-glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .select-glass:focus {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Map container styling */
+        #map {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            height: 400px;
+            width: 100%;
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+            height: 60px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .bottom-nav a {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 0 0.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .bottom-nav a:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .bottom-nav a.active {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+        
+        .bottom-nav .nav-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bottom-nav .nav-label {
+            font-size: 0.625rem;
+            font-weight: 500;
+        }
+        
+        /* Status options untuk select */
+        .option-lancar {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.15));
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .option-padat {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(250, 204, 21, 0.15));
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        
+        .option-macet {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.15));
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Not found section */
+        .not-found-section {
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Action buttons container */
+        .action-buttons {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-scroll {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            .mobile-padding {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+            
+            .mobile-text-xs {
+                font-size: 0.75rem !important;
+            }
+            
+            .mobile-sticky {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 40 !important;
+            }
+            
+            /* Map responsive untuk mobile */
+            #map {
+                height: 300px;
+                border-radius: 10px;
+            }
+            
+            /* Button sizing untuk mobile */
+            .btn-mobile {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Grid layout untuk mobile */
+            .mobile-grid {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Padding untuk mobile */
+            .mobile-section-padding {
+                padding: 1rem !important;
+            }
+            
+            /* Text size untuk mobile */
+            .mobile-h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            .mobile-h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Form layout untuk mobile */
+            .mobile-form-stack {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #map {
+                height: 350px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Text colors untuk kontras */
+        .text-primary {
+            color: #e2e8f0 !important;
+        }
+        
+        .text-secondary {
+            color: #cbd5e1 !important;
+        }
+        
+        .text-muted {
+            color: #94a3b8 !important;
+        }
+        
+        /* Label styling */
+        .form-label {
+            color: #e2e8f0;
+            font-weight: 500;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        /* Required field indicator */
+        .required::after {
+            content: " *";
+            color: #ef4444;
+        }
+        
+        /* Helper text */
+        .helper-text {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        
+        /* Geocoder custom styling */
+        .mapboxgl-ctrl-geocoder {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 10px !important;
+            color: white !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder input {
+            color: white !important;
+            background: transparent !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder input::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder--icon-search {
+            fill: white !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder .suggestions {
+            background: rgba(15, 23, 42, 0.95) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder .suggestions > li > a {
+            color: #cbd5e1 !important;
+        }
+        
+        .mapboxgl-ctrl-geocoder .suggestions > li > a:hover {
+            background: rgba(59, 130, 246, 0.1) !important;
+            color: white !important;
+        }
+        
+        /* Mapbox controls styling */
+        .mapboxgl-ctrl-group {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+        }
+        
+        .mapboxgl-ctrl-group button {
+            background-color: transparent !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .mapboxgl-ctrl-group button:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Button groups untuk mobile */
+        .mobile-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Success modal styling */
+        .success-modal {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        /* Loading spinner custom */
+        .loading-spinner {
+            color: #3b82f6;
+        }
+        
+        /* Responsive text untuk mobile */
+        @media (max-width: 480px) {
+            .mobile-btn-group .btn span:not(.icon) {
+                display: none;
+            }
+            
+            .mobile-btn-group .btn {
+                min-width: 44px;
+                max-width: 44px;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800 touch-manipulation">
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="success-modal rounded-2xl p-6 max-w-xs w-full mx-4 text-center">
+            <div class="text-green-500 text-5xl mb-4">✓</div>
+            <h3 class="text-xl font-bold mb-2 text-primary">Data Berhasil Diubah!</h3>
+            <p class="text-secondary mb-6 text-sm">Data lokasi telah diperbarui di database.</p>
+            <div class="space-y-3">
+                <a href="index.html" class="btn btn-premium w-full btn-sm">🏠 Dashboard</a>
+                <a href="data_lokasi.html" class="btn btn-ubah w-full btn-sm">📋 Lihat Data</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-4 space-y-6 mobile-padding">
+        
+        <!-- HEADER -->
+        <header class="rounded-2xl shadow-xl header-gradient mobile-sticky animate-fadeIn">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <a href="index.html" class="btn btn-circle btn-ghost btn-sm text-white hover:bg-white/10">
+                            ←
+                        </a>
+                        <div>
+                            <h1 class="text-lg font-bold text-white mobile-h1 flex items-center gap-2">
+                                <span>✏️</span>
+                                <span>Ubah Data Lokasi</span>
+                            </h1>
+                            <p class="text-blue-200 text-xs">Perbarui data lokasi kemacetan</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- MAIN CONTENT -->
+        <div class="glass rounded-2xl p-4 animate-fadeIn mobile-section-padding">
+            <div id="loading" class="text-center py-12">
+                <div class="loading loading-spinner loading-lg loading-spinner mb-4"></div>
+                <h3 class="text-lg font-bold mb-2 text-primary">Memuat data lokasi...</h3>
+                <p class="text-secondary text-sm">Sedang mengambil data dari database</p>
+            </div>
+            
+            <form id="editForm" class="hidden space-y-6">
+                <!-- MAP SECTION -->
+                <div>
+                    <h2 class="font-bold text-primary mb-3 text-sm mobile-h2 flex items-center gap-2">
+                        <span>🗺️</span>
+                        <span>Peta Lokasi</span>
+                    </h2>
+                    <div id="map" class="touch-action-none"></div>
+                    
+                    <!-- Geocoder Search -->
+                    <div class="mt-3">
+                        <label class="form-label">Cari Lokasi Baru</label>
+                        <div id="geocoder" class="mapboxgl-ctrl mapboxgl-ctrl-geocoder"></div>
+                        <span class="helper-text">Cari atau klik peta untuk mengubah lokasi</span>
+                    </div>
+                </div>
+                
+                <!-- FORM SECTION -->
+                <div>
+                    <h2 class="font-bold text-primary mb-4 text-sm mobile-h2 flex items-center gap-2">
+                        <span>📝</span>
+                        <span>Data Lokasi</span>
+                    </h2>
+                    
+                    <div class="space-y-4 mobile-form-stack">
+                        <!-- Alamat -->
+                        <div class="form-group">
+                            <label class="form-label required">
+                                Alamat Lengkap
+                            </label>
+                            <input type="text" id="alamat" name="alamat" 
+                                   class="input input-bordered w-full input-glass"
+                                   placeholder="Contoh: Jl. Contoh No. 123"
+                                   required
+                                   enterkeyhint="next">
+                        </div>
+                        
+                        <!-- Grid for smaller fields -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Kecamatan -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Kecamatan
+                                </label>
+                                <input type="text" id="kecamatan" name="kecamatan" 
+                                       class="input input-bordered w-full input-glass"
+                                       placeholder="Nama kecamatan"
+                                       enterkeyhint="next">
+                            </div>
+                            
+                            <!-- Kota -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Kota / Kabupaten
+                                </label>
+                                <input type="text" id="kota" name="kota" 
+                                       class="input input-bordered w-full input-glass"
+                                       placeholder="Nama kota"
+                                       enterkeyhint="next">
+                            </div>
+                        </div>
+                        
+                        <!-- Grid for coordinates -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Latitude -->
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    Latitude
+                                </label>
+                                <input type="text" id="latitude" name="latitude" 
+                                       class="input input-bordered w-full input-glass bg-gray-900/50"
+                                       placeholder="-6.123456"
+                                       readonly required>
+                            </div>
+                            
+                            <!-- Longitude -->
+                            <div class="form-group">
+                                <label class="form-label required">
+                                    Longitude
+                                </label>
+                                <input type="text" id="longitude" name="longitude" 
+                                       class="input input-bordered w-full input-glass bg-gray-900/50"
+                                       placeholder="106.123456"
+                                       readonly required>
+                            </div>
+                        </div>
+                        
+                        <!-- Grid for additional fields -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mobile-grid">
+                            <!-- Provinsi -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Provinsi
+                                </label>
+                                <input type="text" id="provinsi" name="provinsi" 
+                                       class="input input-bordered w-full input-glass"
+                                       placeholder="Nama provinsi"
+                                       enterkeyhint="next">
+                            </div>
+                            
+                            <!-- Kode Pos -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Kode Pos
+                                </label>
+                                <input type="text" id="kode_pos" name="kode_pos" 
+                                       class="input input-bordered w-full input-glass"
+                                       placeholder="12345"
+                                       enterkeyhint="next">
+                            </div>
+                        </div>
+                        
+                        <!-- Status Kemacetan -->
+                        <div class="form-group">
+                            <label class="form-label required">
+                                Status Kemacetan
+                            </label>
+                            <select name="traffic_level" id="traffic_level" class="select select-bordered w-full select-glass font-semibold" required>
+                                <option value="Lancar" class="option-lancar">Lancar</option>
+                                <option value="Padat" class="option-padat">Padat</option>
+                                <option value="Macet" class="option-macet">Macet</option>
+                            </select>
+                            <span class="helper-text">
+                                Pilih status kemacetan terbaru
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ACTION BUTTONS - Mobile Bottom -->
+                <div class="action-buttons rounded-2xl p-4 sticky bottom-0 z-30 mt-6">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button type="button" onclick="window.location.href='index.html'" 
+                                class="btn glass border-light hover:bg-white/10 btn-sm flex-1 btn-mobile">
+                            <span class="hidden sm:inline">← Batal</span>
+                            <span class="sm:hidden">← Batal</span>
+                        </button>
+                        <button type="submit" 
+                                class="btn btn-simpan btn-sm flex-1 btn-mobile">
+                            <span class="hidden sm:inline">💾 Simpan Perubahan</span>
+                            <span class="sm:hidden">💾 Simpan</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- NOT FOUND SECTION -->
+            <div id="notFound" class="hidden not-found-section rounded-2xl p-8 text-center">
+                <div class="text-red-500 text-6xl mb-4">❌</div>
+                <h2 class="text-2xl font-bold mb-4 text-primary">Data Tidak Ditemukan</h2>
+                <p class="text-secondary mb-6">Data lokasi yang dimaksud tidak ditemukan dalam database.</p>
+                <div class="mobile-btn-group">
+                    <a href="index.html" class="btn btn-premium">🏠 Dashboard</a>
+                    <a href="data_lokasi.html" class="btn btn-ubah">📋 Data Lokasi</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation for Mobile -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-40 sm:hidden animate-fadeIn">
+        <div class="flex justify-around items-center h-full">
+            <a href="index.html" class="active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="form_tambah.html" class="flex flex-col items-center justify-center p-2">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Tambah</span>
+            </a>
+            <button type="submit" form="editForm" class="flex flex-col items-center justify-center p-2">
+                <span class="nav-icon">💾</span>
+                <span class="nav-label">Simpan</span>
+            </button>
+            <a href="data_lokasi.html" class="flex flex-col items-center justify-center p-2">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Data</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-xs"></div>
+
+    <script>
+        // Token Mapbox
+        mapboxgl.accessToken = 'pk.eyJ1IjoidmFsZW50MjQiLCJhIjoiY21rNjR4OXh0MHF0YzNkb2xlc25yeWcxaiJ9.2Uz3tgUNfRG7d7B4b3I9FA';
+        
+        // Variables
+        let map = null;
+        let marker = null;
+        let geocoder = null;
+        let currentNo = null;
+        
+        // Ambil parameter no dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentNo = urlParams.get('no');
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!currentNo) {
+                showNotFound();
+                return;
+            }
+            
+            // Ambil data dari database
+            const lokasi = Database.getLokasiById(currentNo);
+            
+            if (!lokasi) {
+                showNotFound();
+                return;
+            }
+            
+            // Isi form dengan data
+            document.getElementById('alamat').value = lokasi.alamat;
+            document.getElementById('latitude').value = lokasi.latitude;
+            document.getElementById('longitude').value = lokasi.longitude;
+            document.getElementById('kecamatan').value = lokasi.kecamatan;
+            document.getElementById('kota').value = lokasi.kota;
+            document.getElementById('provinsi').value = lokasi.provinsi;
+            document.getElementById('kode_pos').value = lokasi.kode_pos;
+            document.getElementById('traffic_level').value = lokasi.traffic_level;
+            
+            // Inisialisasi peta
+            initMap(lokasi.latitude, lokasi.longitude);
+            
+            // Sembunyikan loading, tampilkan form
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('editForm').classList.remove('hidden');
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Mobile optimizations
+            if (window.innerWidth <= 768) {
+                optimizeForMobile();
+            }
+        });
+        
+        // Initialize map
+        function initMap(lat, lon) {
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [lon, lat],
+                zoom: 14,
+                attributionControl: false
+            });
+            
+            // Add navigation controls
+            map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+            
+            // Add marker
+            marker = new mapboxgl.Marker({
+                color: '#3b82f6',
+                draggable: false
+            })
+            .setLngLat([lon, lat])
+            .addTo(map);
+            
+            // Add popup
+            marker.setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                    .setHTML(`
+                        <div class="p-2">
+                            <h3 class="font-bold text-sm mb-1 text-primary">📍 Lokasi Saat Ini</h3>
+                            <p class="text-xs text-secondary">Lat: ${lat.toFixed(6)}</p>
+                            <p class="text-xs text-secondary">Lon: ${lon.toFixed(6)}</p>
+                            <p class="text-xs text-secondary mt-1">Klik peta untuk mengubah lokasi</p>
+                        </div>
+                    `)
+            );
+            
+            marker.togglePopup();
+            
+            // Initialize geocoder
+            geocoder = new MapboxGeocoder({
+                accessToken: mapboxgl.accessToken,
+                mapboxgl: mapboxgl,
+                marker: false,
+                placeholder: 'Cari alamat baru...',
+                language: 'id',
+                countries: 'id'
+            });
+            
+            document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+            
+            // Event ketika peta diklik
+            map.on('click', function(e) {
+                const newLat = e.lngLat.lat;
+                const newLon = e.lngLat.lng;
+                
+                updateCoordinates(newLat, newLon);
+                updateMarker(newLat, newLon);
+                getAddressFromCoordinates(newLat, newLon);
+                
+                showNotification('📍 Lokasi berhasil diubah', 'success');
+            });
+            
+            // Event ketika lokasi dipilih dari geocoder
+            geocoder.on('result', function(e) {
+                const lat = e.result.center[1];
+                const lon = e.result.center[0];
+                
+                updateCoordinates(lat, lon);
+                updateMarker(lat, lon);
+                parseLocationFromGeocoder(e.result);
+                
+                // Zoom to location
+                map.flyTo({
+                    center: [lon, lat],
+                    zoom: 15
+                });
+            });
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Form submit
+            document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
+            
+            // Mobile form navigation
+            document.querySelectorAll('input, select').forEach((input, index) => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const nextInput = document.querySelectorAll('input, select')[index + 1];
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    }
+                });
+            });
+            
+            // Window resize
+            window.addEventListener('resize', handleResize);
+        }
+        
+        // Mobile optimizations
+        function optimizeForMobile() {
+            // Prevent zoom on double tap
+            document.addEventListener('touchstart', function(event) {
+                if (event.touches.length > 1) {
+                    event.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Better touch for buttons
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('touchstart', function() {
+                    this.classList.add('active');
+                });
+                btn.addEventListener('touchend', function() {
+                    this.classList.remove('active');
+                });
+            });
+            
+            // Add slide in animation for notifications
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                .animate-slideIn {
+                    animation: slideIn 0.3s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Update coordinates in form
+        function updateCoordinates(lat, lon) {
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lon.toFixed(6);
+        }
+        
+        // Update marker on map
+        function updateMarker(lat, lon) {
+            if (marker) {
+                marker.remove();
+            }
+            
+            marker = new mapboxgl.Marker({
+                color: '#3b82f6',
+                draggable: false
+            })
+            .setLngLat([lon, lat])
+            .addTo(map);
+            
+            // Update popup
+            marker.setPopup(
+                new mapboxgl.Popup({ offset: 25 })
+                    .setHTML(`
+                        <div class="p-2">
+                            <h3 class="font-bold text-sm mb-1 text-primary">📍 Lokasi Baru</h3>
+                            <p class="text-xs text-secondary">Lat: ${lat.toFixed(6)}</p>
+                            <p class="text-xs text-secondary">Lon: ${lon.toFixed(6)}</p>
+                        </div>
+                    `)
+            );
+            
+            marker.togglePopup();
+        }
+        
+        // Get address from coordinates
+        async function getAddressFromCoordinates(lat, lon) {
+            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxgl.accessToken}&language=id`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    const place = data.features[0];
+                    
+                    // Update address field
+                    document.getElementById('alamat').value = place.place_name;
+                    
+                    // Parse location details
+                    parseLocationContext(place.context);
+                }
+            } catch (error) {
+                console.error('Error getting address:', error);
+                document.getElementById('alamat').value = `Lokasi di ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            }
+        }
+        
+        // Parse location from geocoder result
+        function parseLocationFromGeocoder(result) {
+            document.getElementById('alamat').value = result.place_name;
+            
+            if (result.context) {
+                parseLocationContext(result.context);
+            }
+        }
+        
+        // Parse location context
+        function parseLocationContext(context) {
+            let kecamatan = '';
+            let kota = '';
+            let provinsi = '';
+            let kodePos = '';
+            
+            if (context) {
+                context.forEach(item => {
+                    if (item.id.includes('place')) {
+                        kecamatan = item.text;
+                    } else if (item.id.includes('district')) {
+                        kecamatan = item.text;
+                    } else if (item.id.includes('region')) {
+                        kota = item.text;
+                    } else if (item.id.includes('postcode')) {
+                        kodePos = item.text;
+                    } else if (item.id.includes('country')) {
+                        provinsi = item.text;
+                    }
+                });
+            }
+            
+            document.getElementById('kecamatan').value = kecamatan || '';
+            document.getElementById('kota').value = kota || '';
+            document.getElementById('provinsi').value = provinsi || '';
+            document.getElementById('kode_pos').value = kodePos || '';
+        }
+        
+        // Show not found section
+        function showNotFound() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('notFound').classList.remove('hidden');
+        }
+        
+        // Handle form submission
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            // Validate form
+            const latitude = document.getElementById('latitude').value;
+            const longitude = document.getElementById('longitude').value;
+            const trafficLevel = document.getElementById('traffic_level').value;
+            const alamat = document.getElementById('alamat').value;
+            
+            if (!latitude || !longitude) {
+                showNotification('Pilih lokasi di peta terlebih dahulu', 'error');
+                document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            
+            if (!trafficLevel) {
+                showNotification('Pilih status kemacetan', 'error');
+                return;
+            }
+            
+            if (!alamat.trim()) {
+                showNotification('Alamat tidak boleh kosong', 'error');
+                document.getElementById('alamat').focus();
+                return;
+            }
+            
+            // Prepare form data
+            const formData = {
+                alamat: alamat,
+                latitude: parseFloat(latitude),
+                longitude: parseFloat(longitude),
+                kecamatan: document.getElementById('kecamatan').value,
+                kota: document.getElementById('kota').value,
+                provinsi: document.getElementById('provinsi').value,
+                kode_pos: document.getElementById('kode_pos').value,
+                traffic_level: trafficLevel
+            };
+            
+            // Update data di database
+            const success = Database.updateLokasi(currentNo, formData);
+            
+            if (success) {
+                // Show success modal
+                document.getElementById('successModal').classList.remove('hidden');
+                
+                showNotification('Data berhasil diperbarui!', 'success');
+            } else {
+                showNotification('Gagal memperbarui data!', 'error');
+            }
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            let bgClass = 'glass';
+            let icon = 'ℹ️';
+            let title = 'Informasi';
+            
+            if (type === 'success') {
+                bgClass = 'bg-success-soft border-green-500/20';
+                icon = '✅';
+                title = 'Sukses';
+            } else if (type === 'error') {
+                bgClass = 'bg-error-soft border-red-500/20';
+                icon = '❌';
+                title = 'Error';
+            } else if (type === 'warning') {
+                bgClass = 'bg-warning-soft border-yellow-500/20';
+                icon = '⚠️';
+                title = 'Peringatan';
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${bgClass} border animate-slideIn`;
+            notification.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-lg mt-0.5">${icon}</span>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-primary mb-1">${title}</div>
+                        <div class="text-secondary text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+        
+        // Handle resize
+        function handleResize() {
+            if (window.innerWidth <= 768) {
+                document.querySelector('nav').classList.remove('hidden');
+            } else {
+                document.querySelector('nav').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

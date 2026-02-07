@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Dashboard Kemacetan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚦</text></svg>">
+    
+    <!-- Tailwind + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.18.1/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Routing Machine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    
+    <!-- Database Local -->
+    <script src="database.js"></script>
+    
+    <style>
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        }
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0f0f1a);
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            color: #ffffff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Glass effect yang lebih mewah */
+        .glass {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.92), rgba(20, 20, 35, 0.88));
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+        }
+        
+        /* Header gradient premium */
+        .header-gradient {
+            background: linear-gradient(145deg, 
+                rgba(15, 23, 42, 0.95) 0%,
+                rgba(30, 41, 59, 0.92) 50%,
+                rgba(51, 65, 85, 0.9) 100%);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%,
+                rgba(59, 130, 246, 0.6) 50%,
+                transparent 100%);
+        }
+        
+        .header-gradient h1 {
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Card statistik dengan efek glow */
+        .stat-card {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            color: #ffffff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.05), 
+                transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .stat-card-lancar {
+            border-left: 4px solid #10b981;
+        }
+        
+        .stat-card-padat {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .stat-card-macet {
+            border-left: 4px solid #ef4444;
+        }
+        
+        /* Tabel dengan desain premium */
+        .table-container {
+            background: linear-gradient(145deg, rgba(10, 10, 15, 0.95), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .table-glass {
+            background: transparent !important;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table-glass thead {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.9));
+            color: #ffffff;
+        }
+        
+        .table-glass thead th {
+            background: transparent !important;
+            color: #e2e8f0 !important;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.25rem;
+        }
+        
+        .table-glass tbody tr {
+            background: transparent !important;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .table-glass tbody tr:hover {
+            background: linear-gradient(90deg, 
+                rgba(59, 130, 246, 0.08), 
+                rgba(30, 64, 175, 0.05)) !important;
+            transform: scale(1.002);
+        }
+        
+        .table-glass .table-zebra tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02) !important;
+        }
+        
+        .table-glass .table-zebra tbody tr:nth-child(even):hover {
+            background: linear-gradient(90deg, 
+                rgba(59, 130, 246, 0.1), 
+                rgba(30, 64, 175, 0.06)) !important;
+        }
+        
+        .table-glass tbody td {
+            color: #cbd5e1 !important;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9375rem;
+        }
+        
+        /* Badge dengan desain modern */
+        .badge-modern {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            letter-spacing: 0.02em;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white !important;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white !important;
+        }
+        
+        .badge-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white !important;
+        }
+        
+        /* Button dengan desain premium */
+        .btn-premium {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-premium:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 50%, #6366f1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* Button Tambah khusus - warna berbeda dari kolom */
+        .btn-tambah {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            color: white !important;
+            border: none;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        
+        .btn-tambah:hover {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            color: white !important;
+        }
+        
+        /* Button Ubah dan Hapus yang lebih rapih */
+        .btn-ubah {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            color: white !important;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .btn-ubah:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-hapus {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            color: white !important;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .btn-hapus:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Input dengan desain modern */
+        .input-glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.9375rem;
+        }
+        
+        .input-glass:focus {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            color: #ffffff;
+        }
+        
+        .input-glass::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Chart container dengan efek glass */
+        .chart-container {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            height: 300px;
+            position: relative;
+        }
+        
+        /* Map container styling - Dari contoh yang diberikan */
+        #map {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            height: 400px;
+            width: 100%;
+        }
+        
+        /* Route panel styling */
+        .route-panel {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Bottom navigation */
+        .bottom-nav {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+            height: 60px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .bottom-nav a {
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 0 0.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .bottom-nav a:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .bottom-nav a.active {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+        }
+        
+        .bottom-nav .nav-icon {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .bottom-nav .nav-label {
+            font-size: 0.625rem;
+            font-weight: 500;
+        }
+        
+        /* Notification styling */
+        .notification {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(51, 65, 85, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            color: #ffffff;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            max-width: 320px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .mobile-scroll {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            .mobile-padding {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+            
+            .mobile-text-xs {
+                font-size: 0.75rem !important;
+            }
+            
+            .mobile-sticky {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 40 !important;
+            }
+            
+            .btn-ubah, .btn-hapus {
+                min-width: 60px;
+                padding: 0.35rem 0.6rem;
+                font-size: 0.7rem;
+            }
+            
+            /* Map responsive untuk mobile */
+            #map {
+                height: 300px;
+                border-radius: 10px;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+            
+            /* Table responsive untuk mobile */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border-radius: 10px;
+            }
+            
+            .table-container table {
+                min-width: 640px;
+            }
+            
+            /* Button sizing untuk mobile */
+            .btn-mobile {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Grid layout untuk mobile */
+            .mobile-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Padding untuk mobile */
+            .mobile-section-padding {
+                padding: 1rem !important;
+            }
+            
+            /* Text size untuk mobile */
+            .mobile-h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            .mobile-h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Stat card untuk mobile */
+            .stat-card {
+                padding: 0.75rem !important;
+            }
+            
+            .stat-card p:first-child {
+                font-size: 0.75rem !important;
+            }
+            
+            .stat-card p:nth-child(2) {
+                font-size: 1.5rem !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #map {
+                height: 350px;
+            }
+            
+            .chart-container {
+                height: 280px;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Loading screen */
+        #loadingScreen {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+        }
+        
+        /* Text colors untuk kontras */
+        .text-primary {
+            color: #e2e8f0 !important;
+        }
+        
+        .text-secondary {
+            color: #cbd5e1 !important;
+        }
+        
+        .text-muted {
+            color: #94a3b8 !important;
+        }
+        
+        /* Badge variants untuk kontras */
+        .bg-success-soft {
+            background: rgba(16, 185, 129, 0.15) !important;
+            color: #10b981 !important;
+        }
+        
+        .bg-warning-soft {
+            background: rgba(245, 158, 11, 0.15) !important;
+            color: #f59e0b !important;
+        }
+        
+        .bg-error-soft {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+        }
+        
+        /* Border colors */
+        .border-light {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Section spacing */
+        section {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Route highlight animation */
+        .route-highlight { 
+            animation: highlightPulse 2s ease-in-out; 
+        }
+        
+        @keyframes highlightPulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        /* Floating Action Button untuk mobile */
+        .fab-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .fab-main {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .fab-main:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+        }
+        
+        /* Button group untuk mobile */
+        .mobile-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .mobile-btn-group .btn {
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+        }
+        
+        /* Responsive text untuk mobile */
+        @media (max-width: 480px) {
+            .mobile-btn-group .btn span:not(.icon) {
+                display: none;
+            }
+            
+            .mobile-btn-group .btn {
+                min-width: 44px;
+                max-width: 44px;
+            }
+        }
+        
+        /* Card hover efek untuk mobile */
+        @media (hover: hover) {
+            .stat-card:hover {
+                transform: translateY(-4px);
+            }
+        }
+        
+        @media (hover: none) {
+            .stat-card:active {
+                transform: scale(0.98);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen touch-manipulation">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-gradient-to-br from-blue-900 to-gray-900 flex flex-col items-center justify-center z-50 transition-opacity duration-300">
+        <div class="text-center">
+            <div class="text-6xl mb-4 text-white">🚦</div>
+            <div class="loading loading-spinner loading-lg text-white mb-4"></div>
+            <h2 class="text-2xl font-bold text-white mb-2 animate-pulse">Dashboard Kemacetan</h2>
+            <p class="text-gray-300">Memuat data...</p>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6 mobile-padding">
+        
+        <!-- HEADER -->
+        <header class="rounded-2xl sm:rounded-3xl shadow-xl header-gradient mobile-sticky animate-fadeIn">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex-1">
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold leading-tight mobile-h1">
+                            🚦 Dashboard Kemacetan Lalu Lintas
+                        </h1>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1 opacity-90">
+                            Sistem Informasi Monitoring Kemacetan Lalu Lintas Berbasis Web Dengan Menggunakan API Mapbox, Tomtom, dan Leaflet.
+                        </p>
+                        <p class="text-blue-200 text-xs sm:text-sm mt-1 opacity-90">
+                            Oleh Rizky Valent 10123069 IF2
+                        </p>
+                    </div>
+                    
+                    <!-- Button group untuk desktop -->
+                    <div class="hidden sm:flex flex-wrap gap-2">
+                        <a href="form_tambah.html" class="btn btn-sm md:btn-md btn-tambah shadow btn-mobile">
+                            <span class="hidden sm:inline">+</span>
+                            <span class="sm:hidden">➕</span>
+                            <span class="ml-1 font-medium">Tambah Lokasi</span>
+                        </a>
+                        <a href="posisi_saya.html" class="btn btn-sm md:btn-md glass border-light hover:bg-white/10 btn-mobile">
+                            <span class="hidden sm:inline">📍</span>
+                            <span class="sm:hidden">📍</span>
+                            <span class="ml-1">Posisi Saya</span>
+                        </a>
+                        <button id="btn_show_route" class="btn btn-sm md:btn-md btn-premium btn-mobile">
+                            <span class="hidden sm:inline">🧭</span>
+                            <span class="sm:hidden">🧭</span>
+                            <span class="ml-1">Rute & Navigasi</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Button group untuk mobile -->
+                    <div class="sm:hidden mobile-btn-group">
+                        <a href="form_tambah.html" class="btn btn-sm btn-tambah">
+                            <span>➕</span>
+                            <span class="ml-1">Tambah</span>
+                        </a>
+                        <a href="posisi_saya.html" class="btn btn-sm glass border-light">
+                            <span>📍</span>
+                            <span class="ml-1">Posisi</span>
+                        </a>
+                        <button id="btn_show_route_mobile" class="btn btn-sm btn-premium">
+                            <span>🧭</span>
+                            <span class="ml-1">Rute</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- MINI MAP SECTION - Dari contoh yang diberikan -->
+        <section class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 animate-fadeIn mobile-section-padding">
+            <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2 mobile-h2">
+                <span>🗺️ Peta Lokasi Kemacetan</span>
+                <span id="map_status" class="badge badge-sm badge-info hidden">Mode Rute Aktif</span>
+            </h2>
+            
+            <div class="mb-4 flex flex-col sm:flex-row gap-2">
+                <input type="text" id="search_map" 
+                       placeholder="Cari lokasi di seluruh dunia..." 
+                       class="input input-bordered flex-1 input-glass"
+                       enterkeyhint="search">
+                <div class="flex gap-2">
+                    <button id="btn_search_map" class="btn btn-sm btn-premium flex-1 sm:flex-none">Cari</button>
+                    <button id="btn_my_position" class="btn btn-sm glass border-light flex-1 sm:flex-none">
+                        <span class="sm:hidden">📍</span>
+                        <span class="hidden sm:inline">📍 Posisi Saya</span>
+                    </button>
+                    <button id="btn_clear_route" class="btn btn-sm btn-hapus hidden flex-1 sm:flex-none">
+                        <span class="sm:hidden">🗑️</span>
+                        <span class="hidden sm:inline">Hapus Rute</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="map" class="touch-action-none"></div>
+        </section>
+        
+        <!-- PANEL RUTE & NAVIGASI -->
+        <section id="route_panel" class="route-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 hidden animate-fadeIn mobile-section-padding">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold flex items-center gap-2 mobile-h2">
+                    <span class="text-cyan-400">🧭</span>
+                    <span>Rute & Navigasi</span>
+                </h3>
+                <button id="btn_close_route" class="btn btn-xs btn-circle btn-ghost text-muted hover:text-primary">
+                    ✕
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="space-y-2">
+                    <label class="font-semibold text-sm text-secondary">📍 Lokasi Asal</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="route_start" 
+                               placeholder="Masukkan alamat asal..." 
+                               class="input input-bordered flex-1 input-glass"
+                               enterkeyhint="next">
+                        <button id="btn_current_location" class="btn btn-sm glass border-light hover:bg-white/10 btn-square btn-mobile" title="Gunakan posisi saat ini">
+                            📍
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="font-semibold text-sm text-secondary">🎯 Lokasi Tujuan</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="route_end" 
+                               placeholder="Masukkan alamat tujuan..." 
+                               class="input input-bordered flex-1 input-glass"
+                               enterkeyhint="done">
+                        <button id="btn_select_from_map" class="btn btn-sm glass border-light hover:bg-white/10 btn-square btn-mobile" title="Pilih dari peta">
+                            🗺️
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                <button id="btn_route" class="btn btn-sm btn-premium btn-mobile">🗺️ Tampilkan Rute</button>
+                <button id="btn_route_details" class="btn btn-sm glass border-light btn-mobile" disabled>📊 Detail</button>
+                <button id="btn_print_route" class="btn btn-sm glass border-light btn-mobile" disabled>🖨️ Cetak</button>
+                <button id="btn_clear_all" class="btn btn-sm btn-hapus btn-mobile">🗑️ Bersihkan</button>
+            </div>
+            
+            <!-- Info Rute -->
+            <div id="route_info" class="hidden bg-blue-900/30 border border-blue-700/50 rounded-lg p-4">
+                <h3 class="font-bold text-blue-300 mb-2">📊 Informasi Rute</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-blue-300">Jarak:</span>
+                        <span class="font-semibold text-primary" id="route_distance">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-blue-300">Waktu Tempuh:</span>
+                        <span class="font-semibold text-primary" id="route_duration">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-blue-300">Status Lalu Lintas:</span>
+                        <span class="font-semibold text-primary" id="route_traffic">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- STATISTIK -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mobile-grid">
+            <a href="data_lokasi.html" class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center">
+                <p class="text-muted text-xs sm:text-sm font-medium">Total Lokasi</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold mt-1 sm:mt-2 text-primary" id="totalLokasi">0</p>
+            </a>
+            
+            <a href="data_lokasi.html?status=Lancar" class="stat-card stat-card-lancar rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center">
+                <p class="text-muted text-xs sm:text-sm font-medium">Lancar</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-green-400 mt-1 sm:mt-2" id="totalLancar">0</p>
+                <p class="text-green-300 text-xs sm:text-sm mt-1 font-medium" id="pctLancar">0%</p>
+            </a>
+            
+            <a href="data_lokasi.html?status=Padat" class="stat-card stat-card-padat rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center">
+                <p class="text-muted text-xs sm:text-sm font-medium">Padat</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-yellow-400 mt-1 sm:mt-2" id="totalPadat">0</p>
+                <p class="text-yellow-300 text-xs sm:text-sm mt-1 font-medium" id="pctPadat">0%</p>
+            </a>
+            
+            <a href="data_lokasi.html?status=Macet" class="stat-card stat-card-macet rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center">
+                <p class="text-muted text-xs sm:text-sm font-medium">Macet</p>
+                <p class="text-2xl sm:text-3xl md:text-4xl font-bold text-red-400 mt-1 sm:mt-2" id="totalMacet">0</p>
+                <p class="text-red-300 text-xs sm:text-sm mt-1 font-medium" id="pctMacet">0%</p>
+            </a>
+        </div>
+        
+        <!-- TABLE & PENCARIAN -->
+        <section class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6 animate-fadeIn mobile-section-padding">
+            <h2 class="text-lg sm:text-xl font-bold mb-4 mobile-h2">📍 Data Lokasi Kemacetan</h2>
+            
+            <!-- Pencarian Kota -->
+            <div class="mb-4 flex flex-col sm:flex-row gap-2 items-center">
+                <input type="text" id="input_kota" 
+                       placeholder="Cari berdasarkan kota, kecamatan, atau alamat..." 
+                       class="input input-bordered flex-1 input-glass"
+                       enterkeyhint="search">
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="btn_cari_kota" class="btn btn-sm btn-premium flex-1 sm:flex-none">Cari</button>
+                    <button id="btn_reset" class="btn btn-sm glass border-light flex-1 sm:flex-none">Reset</button>
+                </div>
+            </div>
+            
+            <!-- Sorting -->
+            <div class="mb-4 flex items-center gap-2">
+                <label class="font-semibold text-secondary text-sm">Urutkan berdasarkan Kota:</label>
+                <select id="sort_kota" class="select select-bordered select-sm flex-1 sm:w-auto input-glass">
+                    <option value="ASC">A → Z</option>
+                    <option value="DESC">Z → A</option>
+                </select>
+            </div>
+            
+            <!-- Table Container -->
+            <div class="table-container scrollbar-hide">
+                <table class="table table-zebra table-sm sm:table-md w-full table-glass">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4 text-sm">No</th>
+                            <th class="py-3 px-4 text-sm">Alamat</th>
+                            <th class="py-3 px-4 text-sm">Koordinat</th>
+                            <th class="py-3 px-4 text-sm">Wilayah</th>
+                            <th class="py-3 px-4 text-sm">Status</th>
+                            <th class="py-3 px-4 text-sm">Tanggal Dibuat</th>
+                            <th class="py-3 px-4 text-sm text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data akan diisi oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-12 hidden">
+                <div class="text-muted text-5xl mb-4">📭</div>
+                <h3 class="text-lg font-semibold text-secondary mb-2">Tidak Ada Data</h3>
+                <p class="text-muted text-sm mb-6">Belum ada data lokasi yang tersimpan.</p>
+                <a href="form_tambah.html" class="btn btn-tambah">➕ Tambah Data Pertama</a>
+            </div>
+        </section>
+        
+        <!-- GRAFIK -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fadeIn">
+            <div class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <h3 class="font-bold text-primary text-center mb-4 mobile-h2">Diagram Batang Kemacetan</h3>
+                <div class="chart-container">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass rounded-2xl sm:rounded-3xl p-4 sm:p-6">
+                <h3 class="font-bold text-primary text-center mb-4 mobile-h2">Diagram Lingkaran Kemacetan</h3>
+                <div class="chart-container">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
+        <!-- FOOTER -->
+        <footer class="text-center text-muted text-xs sm:text-sm py-6">
+            <p class="font-medium text-secondary">Dashboard Kemacetan Lalu Lintas</p>
+            <p class="mt-1 text-muted">Rizky Valent - IF2 10123069</p>
+        </footer>
+    </div>
+    
+    <!-- Floating Action Button untuk Mobile -->
+    <div class="fab-container sm:hidden">
+        <button id="mobileFab" class="fab-main">
+            📍
+        </button>
+        <div id="fabMenu" class="hidden absolute bottom-full right-0 mb-2 space-y-2">
+            <a href="form_tambah.html" class="btn btn-tambah btn-circle w-12 h-12 text-lg shadow">
+                ➕
+            </a>
+            <a href="posisi_saya.html" class="btn glass border-light btn-circle w-12 h-12 text-lg shadow">
+                🧭
+            </a>
+            <button id="mobileRouteBtn" class="btn btn-premium btn-circle w-12 h-12 text-lg shadow">
+                🗺️
+            </button>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation untuk Mobile -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-40 sm:hidden">
+        <div class="flex justify-around items-center h-full">
+            <a href="index.html" class="active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="data_lokasi.html">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Data</span>
+            </a>
+            <a href="form_tambah.html">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">Tambah</span>
+            </a>
+            <a href="posisi_saya.html">
+                <span class="nav-icon">📍</span>
+                <span class="nav-label">Posisi</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-sm"></div>
+
+    <script>
+        // Initialize database
+        Database.initDatabase();
+        
+        // Variables
+        let barChart = null;
+        let pieChart = null;
+        let map = null;
+        let routingControl = null;
+        let routeMarkers = [];
+        let routeSelectionMode = false;
+        let fabOpen = false;
+        
+        // Initialize on DOM loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                }, 300);
+            }, 500);
+            
+            // Initialize all components
+            initMap();
+            loadStatistics();
+            loadTableData();
+            loadMapData();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Check URL parameters
+            checkUrlParameters();
+        });
+        
+        // Initialize map - Dari contoh yang diberikan
+        function initMap() {
+            map = L.map('map', {
+                preferCanvas: true,
+                zoomControl: false
+            }).setView([-6.200, 106.816], 11);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            // Add zoom control
+            L.control.zoom({
+                position: 'bottomright'
+            }).addTo(map);
+        }
+        
+        // Load statistics
+        function loadStatistics() {
+            const stats = Database.getStatistics();
+            
+            document.getElementById('totalLokasi').textContent = stats.total;
+            document.getElementById('totalLancar').textContent = stats.lancar;
+            document.getElementById('totalPadat').textContent = stats.padat;
+            document.getElementById('totalMacet').textContent = stats.macet;
+            document.getElementById('pctLancar').textContent = stats.lancar_pct + '%';
+            document.getElementById('pctPadat').textContent = stats.padat_pct + '%';
+            document.getElementById('pctMacet').textContent = stats.macet_pct + '%';
+            
+            updateCharts(stats);
+        }
+        
+        // Update charts
+        function updateCharts(stats) {
+            const barCanvas = document.getElementById('barChart');
+            const pieCanvas = document.getElementById('pieChart');
+            
+            if (barChart) barChart.destroy();
+            if (pieChart) pieChart.destroy();
+            
+            // Bar Chart
+            barChart = new Chart(barCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Lancar', 'Padat', 'Macet'],
+                    datasets: [{
+                        label: 'Jumlah Lokasi',
+                        data: [stats.lancar, stats.padat, stats.macet],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(250, 204, 21, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(250, 204, 21, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: false,
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                stepSize: 1,
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11, weight: '500' }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Pie Chart
+            pieChart = new Chart(pieCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Lancar', 'Padat', 'Macet'],
+                    datasets: [{
+                        data: [stats.lancar, stats.padat, stats.macet],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(250, 204, 21, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: 'rgba(15, 23, 42, 1)',
+                        borderWidth: 3,
+                        borderRadius: 4,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                color: '#ffffff',
+                                font: {
+                                    size: window.innerWidth < 640 ? 10 : 12
+                                },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+        
+        // Load table data
+        function loadTableData() {
+            let lokasiList = Database.getAllLokasi();
+            const searchKeyword = document.getElementById('input_kota').value.trim();
+            const sortOrder = document.getElementById('sort_kota').value;
+            
+            if (searchKeyword) {
+                lokasiList = Database.searchByKota(searchKeyword);
+            }
+            
+            lokasiList = Database.sortLokasi(lokasiList, 'kota', sortOrder);
+            
+            const tableBody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (lokasiList.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8">
+                            <div class="flex flex-col items-center">
+                                <div class="text-gray-400 text-4xl mb-2">📭</div>
+                                <div class="text-gray-500 text-lg mb-2">Tidak ada data lokasi</div>
+                                <a href="form_tambah.html" class="text-blue-400 hover:underline text-sm">
+                                    + Tambah data lokasi pertama
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = '';
+            
+            lokasiList.forEach(lokasi => {
+                const date = new Date(lokasi.created_at);
+                const tanggal = date.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                let badge = '';
+                if (lokasi.traffic_level === "Lancar") {
+                    badge = "<span class='badge badge-modern badge-success'>Lancar</span>";
+                } else if (lokasi.traffic_level === "Padat") {
+                    badge = "<span class='badge badge-modern badge-warning'>Padat</span>";
+                } else if (lokasi.traffic_level === "Macet") {
+                    badge = "<span class='badge badge-modern badge-error'>Macet</span>";
+                }
+                
+                const row = `
+                    <tr class='hover:bg-slate-50 transition-colors'>
+                        <td class="font-semibold py-3 px-4">${lokasi.no}</td>
+                        <td class='py-3 px-4 max-w-xs truncate' title="${lokasi.alamat}">${lokasi.alamat}</td>
+                        <td class='py-3 px-4 text-xs'>
+                            <span class="font-mono text-secondary">${lokasi.latitude.toFixed(6)}</span><br>
+                            <span class="font-mono text-secondary">${lokasi.longitude.toFixed(6)}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium">${lokasi.kecamatan || '-'}</div>
+                            <div class="text-sm text-muted">${lokasi.kota || '-'}</div>
+                        </td>
+                        <td class="py-3 px-4">${badge}</td>
+                        <td class="py-3 px-4 text-sm text-secondary">${tanggal}</td>
+                        <td class="py-3 px-4 text-center space-x-1">
+                            <a href='form_ubah.html?no=${lokasi.no}' class='btn-ubah'>Ubah</a>
+                            <button onclick="deleteLokasi(${lokasi.no})" class='btn-hapus'>Hapus</button>
+                        </td>
+                    </tr>
+                `;
+                
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        // Load map data - Dari contoh yang diberikan
+        function loadMapData() {
+            map.eachLayer(function(layer) {
+                if ((layer instanceof L.CircleMarker || layer instanceof L.Marker) && !routeMarkers.includes(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            const lokasiList = Database.getAllLokasi();
+            
+            lokasiList.forEach(function(loc) {
+                let color = 'gray';
+                if (loc.traffic_level === 'Lancar') {
+                    color = 'green';
+                } else if (loc.traffic_level === 'Padat') {
+                    color = 'orange';
+                } else if (loc.traffic_level === 'Macet') {
+                    color = 'red';
+                }
+                
+                const marker = L.circleMarker([loc.latitude, loc.longitude], {
+                    color: color,
+                    radius: 8,
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="p-2 min-w-[250px]">
+                        <h3 class="font-bold text-lg mb-1 text-primary">Lokasi #${loc.no}</h3>
+                        <p class="mb-2 text-sm text-secondary">${loc.alamat}</p>
+                        <div class="space-y-1">
+                            <div class="flex items-center">
+                                <span class="font-medium text-sm text-secondary">Status:</span>
+                                <span class="ml-2 px-2 py-1 rounded text-xs font-semibold ${loc.traffic_level === 'Lancar' ? 'bg-success-soft' : loc.traffic_level === 'Padat' ? 'bg-warning-soft' : 'bg-error-soft'}">
+                                    ${loc.traffic_level}
+                                </span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-medium text-sm text-secondary">Wilayah:</span>
+                                <span class="ml-2 text-sm text-muted">${loc.kecamatan}, ${loc.kota}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="font-medium text-sm text-secondary">Koordinat:</span>
+                                <span class="ml-2 text-xs text-muted">${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}</span>
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="useAsRoutePoint('${loc.alamat}', ${loc.latitude}, ${loc.longitude})" 
+                                        class="btn-ubah text-xs py-1.5 px-3">📍 Gunakan untuk Rute</button>
+                                <a href="form_ubah.html?no=${loc.no}" class="btn-ubah text-xs py-1.5 px-3">✏️ Ubah</a>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                marker.on('mouseover', function() {
+                    this.openPopup();
+                });
+                
+                marker.on('mouseout', function() {
+                    this.closePopup();
+                });
+                
+                marker.on('click', function(e) {
+                    if (routeSelectionMode) {
+                        const alamat = loc.alamat;
+                        const lat = loc.latitude;
+                        const lon = loc.longitude;
+                        
+                        if (!document.getElementById('route_start').value) {
+                            document.getElementById('route_start').value = alamat;
+                            showNotification(`📍 Titik awal ditetapkan: ${alamat.substring(0, 50)}...`, 'success');
+                        } else if (!document.getElementById('route_end').value) {
+                            document.getElementById('route_end').value = alamat;
+                            showNotification(`🎯 Titik akhir ditetapkan: ${alamat.substring(0, 50)}...`, 'success');
+                            disableRouteSelectionMode();
+                        }
+                    }
+                });
+            });
+            
+            if (lokasiList.length > 0 && !routingControl) {
+                const bounds = L.latLngBounds(lokasiList.map(loc => [loc.latitude, loc.longitude]));
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+        
+        // Delete location
+        function deleteLokasi(no) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="glass rounded-2xl p-6 max-w-sm w-full">
+                    <h3 class="text-lg font-bold text-primary mb-3">Konfirmasi Hapus</h3>
+                    <p class="text-secondary text-sm mb-6">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</p>
+                    <div class="flex gap-3">
+                        <button onclick="this.closest('.fixed').remove()" class="btn-ubah flex-1">
+                            Batal
+                        </button>
+                        <button onclick="confirmDelete(${no})" class="btn-hapus flex-1">
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        // Confirm delete function
+        function confirmDelete(no) {
+            const success = Database.deleteLokasi(no);
+            if (success) {
+                showNotification('Data berhasil dihapus!', 'success');
+                refreshAllData();
+            }
+            const modal = document.querySelector('.fixed.bg-black.bg-opacity-50');
+            if (modal) modal.remove();
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            let bgClass = 'glass';
+            let icon = 'ℹ️';
+            let title = 'Informasi';
+            
+            if (type === 'success') {
+                bgClass = 'bg-success-soft border-green-500/20';
+                icon = '✅';
+                title = 'Sukses';
+            } else if (type === 'error') {
+                bgClass = 'bg-error-soft border-red-500/20';
+                icon = '❌';
+                title = 'Error';
+            } else if (type === 'warning') {
+                bgClass = 'bg-warning-soft border-yellow-500/20';
+                icon = '⚠️';
+                title = 'Peringatan';
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${bgClass} border animate-slideIn`;
+            notification.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-lg mt-0.5">${icon}</span>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-primary mb-1">${title}</div>
+                        <div class="text-secondary text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+        
+        // Refresh all data
+        function refreshAllData() {
+            loadStatistics();
+            loadTableData();
+            loadMapData();
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search map
+            document.getElementById('btn_search_map').addEventListener('click', searchGlobalMap);
+            document.getElementById('search_map').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchGlobalMap();
+            });
+            
+            // My position
+            document.getElementById('btn_my_position').addEventListener('click', getMyPosition);
+            
+            // Route panel
+            document.getElementById('btn_show_route').addEventListener('click', toggleRoutePanel);
+            document.getElementById('btn_show_route_mobile').addEventListener('click', toggleRoutePanel);
+            document.getElementById('mobileRouteBtn').addEventListener('click', toggleRoutePanel);
+            document.getElementById('btn_close_route').addEventListener('click', closeRoutePanel);
+            
+            // Route buttons
+            document.getElementById('btn_current_location').addEventListener('click', useCurrentPosition);
+            document.getElementById('btn_select_from_map').addEventListener('click', enableRouteSelection);
+            document.getElementById('btn_route').addEventListener('click', showRoute);
+            document.getElementById('btn_clear_all').addEventListener('click', clearRoute);
+            document.getElementById('btn_clear_route').addEventListener('click', clearRoute);
+            document.getElementById('btn_route_details').addEventListener('click', showRouteDetails);
+            document.getElementById('btn_print_route').addEventListener('click', printRoute);
+            
+            // Search and sort
+            document.getElementById('btn_cari_kota').addEventListener('click', loadTableData);
+            document.getElementById('input_kota').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loadTableData();
+            });
+            document.getElementById('sort_kota').addEventListener('change', loadTableData);
+            document.getElementById('btn_reset').addEventListener('click', function() {
+                document.getElementById('input_kota').value = '';
+                loadTableData();
+            });
+            
+            // Mobile FAB
+            document.getElementById('mobileFab').addEventListener('click', toggleFabMenu);
+            
+            // Window resize
+            window.addEventListener('resize', handleResize);
+            window.addEventListener('resize', () => map.invalidateSize());
+        }
+        
+        // Search global map - Dari contoh yang diberikan
+        async function searchGlobalMap() {
+            const query = document.getElementById('search_map').value.trim();
+            if(!query) return;
+            
+            showNotification('Mencari lokasi...', 'info');
+            
+            try{
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`, {
+                    headers: {"User-Agent":"DashboardKemacetan/1.0"}
+                });
+                const data = await res.json();
+                if(data.length>0){
+                    const loc = data[0];
+                    map.setView([loc.lat, loc.lon], 14);
+                    
+                    const searchMarker = L.marker([loc.lat, loc.lon], {
+                        title: loc.display_name,
+                        icon: L.icon({
+                            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41]
+                        })
+                    }).addTo(map);
+                    
+                    searchMarker.bindPopup(`
+                        <div class="p-2">
+                            <h3 class="font-bold mb-2 text-primary">📍 ${loc.display_name}</h3>
+                            <button onclick="useSearchResultAsRoutePoint('${loc.display_name}', ${loc.lat}, ${loc.lon})" 
+                                    class="btn-ubah text-xs py-1.5 px-3 w-full mt-2">
+                                🗺️ Gunakan untuk Rute
+                            </button>
+                        </div>
+                    `).openPopup();
+                    
+                    showNotification('Lokasi ditemukan!', 'success');
+                } else {
+                    showNotification('Lokasi tidak ditemukan!', 'error');
+                }
+            } catch(err){ 
+                console.error(err); 
+                showNotification('Terjadi kesalahan saat mencari lokasi.', 'error');
+            }
+        }
+        
+        // Get my position - Dari contoh yang diberikan
+        function getMyPosition() {
+            if(!navigator.geolocation){ 
+                showNotification('Browser Anda tidak mendukung Geolocation.', 'error');
+                return; 
+            }
+            
+            showNotification('Mendapatkan posisi Anda...', 'info');
+            
+            navigator.geolocation.getCurrentPosition(
+                function(pos){
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    map.setView([lat, lon], 15);
+                    
+                    const myMarker = L.marker([lat, lon], {
+                        title: "Posisi Saya",
+                        icon: L.icon({
+                            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41]
+                        })
+                    }).addTo(map);
+                    
+                    myMarker.bindPopup(`
+                        <div class="p-2">
+                            <h3 class="font-bold mb-2 text-primary">📍 Posisi Anda Saat Ini</h3>
+                            <p class="text-sm mb-2 text-secondary">Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+                            <button onclick="useCurrentPositionAsRoutePoint(${lat}, ${lon})" 
+                                    class="btn-ubah text-xs py-1.5 px-3 w-full">
+                                🗺️ Gunakan sebagai Titik Rute
+                            </button>
+                        </div>
+                    `).openPopup();
+                    
+                    showNotification('Posisi berhasil ditemukan!', 'success');
+                }, 
+                function(err){ 
+                    showNotification('Gagal mendapatkan posisi: ' + err.message, 'error');
+                }
+            );
+        }
+        
+        // Route functions
+        function toggleRoutePanel() {
+            const panel = document.getElementById('route_panel');
+            const isHidden = panel.classList.contains('hidden');
+            
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                panel.classList.add('route-highlight');
+                
+                setTimeout(() => {
+                    const mapSection = document.querySelector('.glass.rounded-2xl');
+                    if (mapSection) {
+                        mapSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center'
+                        });
+                        
+                        mapSection.classList.add('route-highlight');
+                        setTimeout(() => {
+                            mapSection.classList.remove('route-highlight');
+                        }, 2000);
+                        
+                        document.getElementById('map_status').classList.remove('hidden');
+                    }
+                    
+                    setTimeout(() => {
+                        document.getElementById('route_start').focus();
+                        showNotification('Masukkan lokasi awal dan tujuan untuk membuat rute', 'info');
+                    }, 500);
+                }, 100);
+                
+                setTimeout(() => {
+                    panel.classList.remove('route-highlight');
+                }, 2000);
+            } else {
+                panel.classList.add('hidden');
+                document.getElementById('map_status').classList.add('hidden');
+            }
+        }
+        
+        function closeRoutePanel() {
+            const panel = document.getElementById('route_panel');
+            panel.classList.add('hidden');
+            document.getElementById('map_status').classList.add('hidden');
+            disableRouteSelectionMode();
+            showNotification('Panel rute ditutup', 'info');
+        }
+        
+        function useCurrentPosition() {
+            if(!navigator.geolocation) return;
+            
+            showNotification('Mendapatkan posisi Anda...', 'info');
+            
+            navigator.geolocation.getCurrentPosition(
+                function(pos){
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+                        headers: {"User-Agent":"DashboardKemacetan/1.0"}
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        const address = data.display_name || `Posisi Anda (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                        document.getElementById('route_start').value = address;
+                        showNotification(`📍 Posisi Anda ditetapkan sebagai titik awal`, 'success');
+                        
+                        const marker = L.marker([lat, lon], {
+                            title: "Posisi Anda"
+                        }).addTo(map);
+                        
+                        marker.bindPopup(`<b class="text-primary">📍 Posisi Anda</b><br>${address}`).openPopup();
+                        routeMarkers.push(marker);
+                        
+                        map.setView([lat, lon], 14);
+                    })
+                    .catch(err => {
+                        const address = `Posisi Anda (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                        document.getElementById('route_start').value = address;
+                        showNotification(`📍 Posisi Anda ditetapkan sebagai titik awal`, 'success');
+                    });
+                },
+                function(err){
+                    showNotification('Gagal mendapatkan posisi: ' + err.message, 'error');
+                }
+            );
+        }
+        
+        function enableRouteSelection() {
+            routeSelectionMode = true;
+            document.getElementById('btn_select_from_map').classList.add('btn-active');
+            document.getElementById('map_status').textContent = 'Mode: Pilih Lokasi dari Peta';
+            showNotification('Mode pemilihan aktif. Klik marker di peta untuk memilih lokasi.', 'warning');
+        }
+        
+        function disableRouteSelectionMode() {
+            routeSelectionMode = false;
+            document.getElementById('btn_select_from_map').classList.remove('btn-active');
+            document.getElementById('map_status').textContent = 'Mode Rute Aktif';
+        }
+        
+        function useSearchResultAsRoutePoint(address, lat, lon) {
+            if (!document.getElementById('route_start').value) {
+                document.getElementById('route_start').value = address;
+                showNotification(`📍 Titik awal: ${address.substring(0, 50)}...`, 'success');
+            } else {
+                document.getElementById('route_end').value = address;
+                showNotification(`🎯 Titik akhir: ${address.substring(0, 50)}...`, 'success');
+            }
+        }
+        
+        function useCurrentPositionAsRoutePoint(lat, lon) {
+            const address = `Posisi Saat Ini (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+            if (!document.getElementById('route_start').value) {
+                document.getElementById('route_start').value = address;
+                showNotification(`📍 Posisi Anda sebagai titik awal`, 'success');
+            } else {
+                document.getElementById('route_end').value = address;
+                showNotification(`🎯 Posisi Anda sebagai titik akhir`, 'success');
+            }
+        }
+        
+        function useAsRoutePoint(address, lat, lon) {
+            if (!document.getElementById('route_start').value) {
+                document.getElementById('route_start').value = address;
+                showNotification(`📍 Titik awal: ${address.substring(0, 50)}...`, 'success');
+            } else {
+                document.getElementById('route_end').value = address;
+                showNotification(`🎯 Titik akhir: ${address.substring(0, 50)}...`, 'success');
+            }
+            
+            map.setView([lat, lon], 14);
+        }
+        
+        async function showRoute() {
+            const start = document.getElementById('route_start').value.trim();
+            const end   = document.getElementById('route_end').value.trim();
+            
+            if(!start || !end) {
+                showNotification('Isi kedua lokasi (asal dan tujuan)!', 'error');
+                return;
+            }
+            
+            showNotification('Mencari rute terbaik...', 'info');
+            
+            try {
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
+                
+                routeMarkers.forEach(marker => map.removeLayer(marker));
+                routeMarkers = [];
+                
+                const [dataStart, dataEnd] = await Promise.all([
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(start)}&limit=1`, {
+                        headers: {"User-Agent":"DashboardKemacetan/1.0"}
+                    }).then(r=>r.json()),
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(end)}&limit=1`, {
+                        headers: {"User-Agent":"DashboardKemacetan/1.0"}
+                    }).then(r=>r.json())
+                ]);
+
+                if(!dataStart.length || !dataEnd.length) {
+                    showNotification('Lokasi tidak ditemukan! Pastikan alamat valid.', 'error');
+                    return;
+                }
+
+                const startLatLng = [parseFloat(dataStart[0].lat), parseFloat(dataStart[0].lon)];
+                const endLatLng   = [parseFloat(dataEnd[0].lat), parseFloat(dataEnd[0].lon)];
+                
+                const startMarker = L.marker(startLatLng, {
+                    title: "Titik Awal",
+                    icon: L.icon({
+                        iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map);
+                
+                startMarker.bindPopup(`<b class="text-primary">📍 Titik Awal</b><br>${start}`).openPopup();
+                routeMarkers.push(startMarker);
+                
+                const endMarker = L.marker(endLatLng, {
+                    title: "Titik Akhir",
+                    icon: L.icon({
+                        iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map);
+                
+                endMarker.bindPopup(`<b class="text-primary">🎯 Titik Akhir</b><br>${end}`).openPopup();
+                routeMarkers.push(endMarker);
+
+                routingControl = L.Routing.control({
+                    waypoints:[
+                        L.latLng(startLatLng[0], startLatLng[1]), 
+                        L.latLng(endLatLng[0], endLatLng[1])
+                    ],
+                    routeWhileDragging:false,
+                    draggableWaypoints:true,
+                    showAlternatives:false,
+                    fitSelectedRoutes:true,
+                    lineOptions:{
+                        styles:[
+                            {color:'#3b82f6', opacity:0.8, weight:6},
+                            {color:'#60a5fa', opacity:0.6, weight:4}
+                        ]
+                    },
+                    createMarker:function(i, wp){ 
+                        return null;
+                    },
+                    show: true
+                }).addTo(map);
+                
+                document.getElementById('btn_clear_route').classList.remove('hidden');
+                document.getElementById('btn_route_details').disabled = false;
+                document.getElementById('btn_print_route').disabled = false;
+                document.getElementById('route_info').classList.remove('hidden');
+                
+                const distance = calculateDistance(startLatLng[0], startLatLng[1], endLatLng[0], endLatLng[1]);
+                const duration = calculateDuration(distance);
+                
+                document.getElementById('route_distance').textContent = `${distance.toFixed(1)} km`;
+                document.getElementById('route_duration').textContent = `${duration} menit`;
+                
+                const trafficStatus = simulateTrafficStatus(startLatLng, endLatLng);
+                document.getElementById('route_traffic').textContent = trafficStatus;
+                
+                const mapSection = document.querySelector('.glass.rounded-2xl');
+                if (mapSection) {
+                    mapSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center'
+                    });
+                }
+                
+                showNotification('Rute berhasil ditampilkan!', 'success');
+                
+            } catch(error) {
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat menampilkan rute', 'error');
+            }
+        }
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function calculateDuration(distance) {
+            const averageSpeed = 40;
+            const timeHours = distance / averageSpeed;
+            return Math.round(timeHours * 60);
+        }
+        
+        function simulateTrafficStatus(start, end) {
+            const statuses = ['Lancar', 'Sedikit Padat', 'Padat', 'Macet'];
+            const randomIndex = Math.floor(Math.random() * statuses.length);
+            return statuses[randomIndex];
+        }
+        
+        function clearRoute() {
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            
+            routeMarkers.forEach(marker => map.removeLayer(marker));
+            routeMarkers = [];
+            
+            document.getElementById('btn_clear_route').classList.add('hidden');
+            document.getElementById('route_info').classList.add('hidden');
+            document.getElementById('btn_route_details').disabled = true;
+            document.getElementById('btn_print_route').disabled = true;
+            
+            showNotification('Rute telah dihapus', 'info');
+        }
+        
+        function showRouteDetails() {
+            const distance = document.getElementById('route_distance').textContent;
+            const duration = document.getElementById('route_duration').textContent;
+            const traffic = document.getElementById('route_traffic').textContent;
+            
+            alert(`📊 DETAIL RUTE\n\nJarak: ${distance}\nPerkiraan Waktu: ${duration}\nStatus Lalu Lintas: ${traffic}\n\nRute telah ditampilkan di peta.`);
+        }
+        
+        function printRoute() {
+            const start = document.getElementById('route_start').value;
+            const end = document.getElementById('route_end').value;
+            const distance = document.getElementById('route_distance').textContent;
+            const duration = document.getElementById('route_duration').textContent;
+            const traffic = document.getElementById('route_traffic').textContent;
+            
+            const printContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h1 style="color: #3b82f6; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+                        🗺️ RUTE PERJALANAN
+                    </h1>
+                    <div style="margin-top: 20px;">
+                        <h2 style="color: #333;">📍 Informasi Rute</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 120px;">Titik Awal:</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${start}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Titik Akhir:</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${end}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Jarak:</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${distance}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Waktu Tempuh:</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${duration}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Status Lalu Lintas:</td>
+                                <td style="padding: 8px; border: 1px solid #ddd;">${traffic}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="margin-top: 30px; font-size: 12px; color: #666;">
+                        <p>Dicetak dari Dashboard Kemacetan - ${new Date().toLocaleString('id-ID')}</p>
+                    </div>
+                </div>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        // Mobile optimizations
+        function handleResize() {
+            if (window.innerWidth <= 768) {
+                // Update charts on resize
+                if (barChart && pieChart) {
+                    loadStatistics();
+                }
+            }
+        }
+        
+        // Toggle FAB menu
+        function toggleFabMenu() {
+            const fabMenu = document.getElementById('fabMenu');
+            const fab = document.getElementById('mobileFab');
+            
+            fabOpen = !fabOpen;
+            
+            if (fabOpen) {
+                fabMenu.classList.remove('hidden');
+                fab.innerHTML = '✕';
+                fab.classList.add('rotate-45');
+                fabMenu.style.animation = 'fadeIn 0.3s ease-out';
+            } else {
+                fabMenu.classList.add('hidden');
+                fab.innerHTML = '📍';
+                fab.classList.remove('rotate-45');
+            }
+        }
+        
+        // Check URL parameters
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('new')) {
+                showNotification('Data lokasi berhasil ditambahkan!', 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // Export functions for global use
+        window.deleteLokasi = deleteLokasi;
+        window.useAsRoutePoint = useAsRoutePoint;
+        window.useSearchResultAsRoutePoint = useSearchResultAsRoutePoint;
+        window.useCurrentPositionAsRoutePoint = useCurrentPositionAsRoutePoint;
+        window.confirmDelete = confirmDelete;
+    </script>
+</body>
+</html>
